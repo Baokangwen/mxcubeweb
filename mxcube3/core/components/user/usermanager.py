@@ -424,3 +424,12 @@ class UserManager(BaseUserManager):
 
     def _signout(self):
         pass
+    def user_logout(self):
+        user = current_user
+        user_datastore = self.app.server.user_datastore
+
+        _u = user_datastore.find_user(username=user.username)
+        _u.active = False
+        user_datastore.put(_u)
+
+        self.app.server.user_datastore.commit()

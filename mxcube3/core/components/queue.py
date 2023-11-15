@@ -240,7 +240,7 @@ class Queue(ComponentBase):
         elif running or entry.status == QUEUE_ENTRY_STATUS.RUNNING:
             state = RUNNING
         else:
-            state = UNCOLLECTED
+            state = UNCOLLECTED  Z
 
         return (enabled, state)
 
