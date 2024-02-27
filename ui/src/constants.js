@@ -117,6 +117,7 @@ export const SPACE_GROUPS = [
   'I213',
   'I432',
   'I4132',
+  'BL19U'
 ];
 
 export const MOTOR_STATE = {
