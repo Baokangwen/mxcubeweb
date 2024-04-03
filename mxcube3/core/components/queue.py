@@ -2478,7 +2478,7 @@ class Queue(ComponentBase):
 
         if task_name == "characterisation":
             acq_parameters.update(
-                HWR.beamline.characterisation.get_default_characterisation_parameters().as_dict()
+                HWR.beamline.characterisation.get_default_characterisation_parameters_json().as_dict()
             )
 
         schema = self.get_task_schema(data_model) if data_model else {}
