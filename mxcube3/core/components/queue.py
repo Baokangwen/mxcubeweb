@@ -849,10 +849,17 @@ class Queue(ComponentBase):
         #     "_id from get_entry: "
         # )   #添加
         # print(_id)
-
         model = HWR.beamline.queue_model.get_node(int(_id))
         entry = HWR.beamline.queue_manager.get_entry_with_model(model)
         return model, entry
+        # try:
+        #     model = HWR.beamline.queue_model.get_node(int(_id))
+        #     entry = HWR.beamline.queue_manager.get_entry_with_model(model)
+        #     return model, entry
+        #
+        # except Exception as ex:
+        #     logging.getLogger("HWR").error(f'get_entry EXception: {ex}')
+        #     return None, None
 
     def set_enabled_entry(self, qid, enabled):
         # logging.getLogger("HWR").debug(
