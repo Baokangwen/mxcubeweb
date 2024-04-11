@@ -234,7 +234,7 @@ class MXCUBEApplication:
 
     # Automatically add and execute diffraction plans coming from
     # characterizations
-    AUTO_ADD_DIFFPLAN = False
+    AUTO_ADD_DIFFPLAN = True
 
     # Number of sample snapshots taken before collect
     NUM_SNAPSHOTS = 4
