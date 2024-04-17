@@ -919,7 +919,7 @@ class Queue(ComponentBase):
         :param bool flag: True for enabled False for disabled
         """
         logging.getLogger("HWR").debug(
-            "get in enable_entry()"
+            f"get in enable_entry() - {id_or_qentry}"
         )
 
         if isinstance(id_or_qentry, qe.BaseQueueEntry):

@@ -419,6 +419,8 @@ def collect_oscillation_finished(owner, status, state, lims_id, osc_id, params):
     mxcube.NODE_ID_TO_LIMS_ID[node["queue_id"]] = lims_id
     logging.getLogger("HWR").info(f"collect_oscillation_finished - node['queue_id']: {node['queue_id']}")
     if not mxcube.queue.is_interleaved(node["node"]):
+        if(node["queue_id"] == None):
+            print("node queue_id is None")
         mxcube.queue.enable_entry(node["queue_id"], False)
 
         msg = {
