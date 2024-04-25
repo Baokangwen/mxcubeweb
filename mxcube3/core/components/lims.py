@@ -363,7 +363,7 @@ class Lims(ComponentBase):
 
     def get_default_prefix(self, sample_data, generic_name=False):
         if isinstance(sample_data, dict):
-            print("sample_data is dict")
+            # print("sample_data is dict")
             sample = qmo.Sample()
             sample.code = sample_data.get("code", "")
             sample.name = sample_data.get("sampleName", "").replace(":", "-")

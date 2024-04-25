@@ -519,7 +519,7 @@ class Queue(ComponentBase):
         parameters["fullPath"] = os.path.join(
             parameters["path"], parameters["fileName"]
         )
-        model, entry = self.get_entry(queueID)
+        # model, entry = self.get_entry(queueID)
 
         res = {
             "label": "XRF Scan",
@@ -845,21 +845,14 @@ class Queue(ComponentBase):
         :returns: The tuple model, entry
         :rtype: Tuple
         """
-        # logging.getLogger("HWR").debug(
-        #     "_id from get_entry: "
-        # )   #添加
-        # print(_id)
+        if _id == None:
+            print("get_entry _id is None")
+        else:
+            print("get_entry _id is: ", _id)
+
         model = HWR.beamline.queue_model.get_node(int(_id))
         entry = HWR.beamline.queue_manager.get_entry_with_model(model)
         return model, entry
-        # try:
-        #     model = HWR.beamline.queue_model.get_node(int(_id))
-        #     entry = HWR.beamline.queue_manager.get_entry_with_model(model)
-        #     return model, entry
-        #
-        # except Exception as ex:
-        #     logging.getLogger("HWR").error(f'get_entry EXception: {ex}')
-        #     return None, None
 
     def set_enabled_entry(self, qid, enabled):
         # logging.getLogger("HWR").debug(

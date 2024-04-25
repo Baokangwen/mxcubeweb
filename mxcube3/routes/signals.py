@@ -20,7 +20,9 @@ from mxcubecore import HardwareRepository as HWR
 
 
 def last_queue_node():
+    print('last_queue_node, current_queue_entries lenth is: ', len(HWR.beamline.queue_manager._current_queue_entries))
     node = HWR.beamline.queue_manager._current_queue_entries[-1].get_data_model()
+    print('last_queue_node, node id is: ', node._node_id)
 
     # Reference collections are orphans, the node we want is the
     # characterisation not the reference collection itself
