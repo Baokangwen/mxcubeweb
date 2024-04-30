@@ -2284,6 +2284,9 @@ class Queue(ComponentBase):
 
                 HWR.beamline.queue_manager._is_stopped = True
                 signals.queue_execution_stopped()
+            else:
+                HWR.beamline.queue_manager._is_stopped = True
+                signals.queue_execution_stopped()
 
     def queue_pause(self):
         """
