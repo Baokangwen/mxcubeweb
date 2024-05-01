@@ -90,9 +90,9 @@ def handle_auto_mount_next(entry):
 
 def diffractometer_phase_changed(*args):
     data = {"msg": "Diffractometer phase changed", "phase": args}
-    # logging.getLogger("HWR").info(
-    #     "==== Diffractometer phase changed to %s" % args
-    # )
+    logging.getLogger("user_level_log").info(
+        "Diffractometer phase changed to %s" % args
+    )
     server.emit("diff_phase_changed", data, namespace="/hwr")
 
 
