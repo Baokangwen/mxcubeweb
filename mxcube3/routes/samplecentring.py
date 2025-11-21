@@ -134,7 +134,7 @@ def init_route(app, server, url_prefix):
             return Response(status=409)
 
     @bp.route("/shapes/<sid>", methods=["POST"])
-    def shape_add_cell_result(sid):
+    def shape_add_result(sid):
         """
         Update cell result data.
             :parameter shape_data: dict with result info (cell number, result value)
@@ -147,7 +147,7 @@ def init_route(app, server, url_prefix):
         cell_number = params.get("cell", 0)
         result = params.get("result", 0)
 
-        app.sample_view.shape_add_cell_result(sid, cell_number, result)
+        app.sample_view.shape_add_result(sid, cell_number, result)
         return Response(status=200)
 
     @bp.route("/shapes", methods=["POST"])
