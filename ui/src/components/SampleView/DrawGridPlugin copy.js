@@ -87,7 +87,6 @@ export default class DrawGridPlugin {
    * @param {float} cellHeight
    */
   setCellSize(cellWidth, cellHeight) {
-    console.log('setCellSize raw', cellWidth, cellHeight);
     this.gridData.cellWidth = cellWidth;
     this.gridData.cellHeight = cellHeight;
   }
@@ -146,10 +145,7 @@ export default class DrawGridPlugin {
   }
 
   getCellWidth(gd) {
-    const w = (gd.cellWidth / 1000) * this.scale * gd.pixelsPerMMX;
-    // return (gd.cellWidth / 1000) * this.scale * gd.pixelsPerMMX;
-    console.log('getCellWidth inputs', gd.cellWidth, this.scale, gd.pixelsPerMMX, 'result', w);
-    return w
+    return (gd.cellWidth / 1000) * this.scale * gd.pixelsPerMMX;
   }
 
   getCellHeight(gd) {
@@ -239,12 +235,6 @@ export default class DrawGridPlugin {
 
     let width = Math.abs(x - left);
     let height = Math.abs(y - top);
-
-    console.log('update wh', width, height, 'cellTW', cellTW, 'cellTH', cellTH);
-    console.log('cellWidth', this.gridData.cellWidth,
-            'cellHeight', this.gridData.cellHeight,
-            'scale', this.scale,
-            'pixelsPerMM', this.gridData.pixelsPerMMX);
 
     const numCols = Math.ceil(width / cellTW);
     const numRows = Math.ceil(height / cellTH);
