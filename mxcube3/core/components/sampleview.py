@@ -324,6 +324,9 @@ class SampleView(ComponentBase):
                 if not refs:
                     try:
                         x, y = shape_data["screen_coord"]
+                        logging.getLogger("HWR.MX3").info(
+                            f"Frontend Grid Start Screen Coords (x, y): {x}, {y}"
+                        )
                         mpos = HWR.beamline.diffractometer.get_centred_point_from_coord(
                             x, y, return_by_names=True
                         )
@@ -341,6 +344,9 @@ class SampleView(ComponentBase):
                                 y
                                 + (shape_data["num_rows"] /2.0)
                                 * shape_data["cell_height"]
+                            )
+                            logging.getLogger("HWR.MX3").info(
+                                f"Calculated Grid Center Screen Coords (x_c, y_c): {x_c}, {y_c}"
                             )
                             center_positions = HWR.beamline.diffractometer.get_centred_point_from_coord(
                                 x_c, y_c, return_by_names=True
