@@ -850,6 +850,9 @@ class Queue(ComponentBase):
         #     "_id from get_entry: "
         # )   #添加
         # print(_id)
+        if _id is None:
+            logging.getLogger("MX3.HWR").warning("[QUEUE] get_entry called with None ID")
+            return None, None
 
         model = HWR.beamline.queue_model.get_node(int(_id))
         entry = HWR.beamline.queue_manager.get_entry_with_model(model)
@@ -995,6 +998,65 @@ class Queue(ComponentBase):
 
         logging.getLogger("MX3.HWR").info("[QUEUE] is:\n%s " % self.queue_to_json())
 
+    # def queue_add_item(self, item_list):
+    #     """
+    #     Adds the queue items in item_list to the queue. The items in the list can
+    #     be either samples and or tasks. Samples are only added if they are not
+    #     already in the queue  and tasks are appended to the end of an
+    #     (already existing) sample. A task is ignored if the sample is not already
+    #     in the queue.
+
+    #     The items in item_list are dictionaries with the following structure:
+
+    #     { "type": "Sample | DataCollection | Characterisation",
+    #     "sampleID": sid
+    #     ... task or sample specific data
+    #     }
+
+    #     Each item (dictionary) describes either a sample or a task.
+    #     """
+    #     logging.getLogger("HWR").debug(
+    #         "get in queue_add_item()"
+    #     )
+    #     print("item_list in queue_add_item(): ",item_list)
+    #     self._queue_add_item_rec(item_list, None)
+
+    #     # Handling interleaved data collections, swap interleave task with
+    #     # the first of the data collections that are used as wedges, and then
+    #     # remove all collections that were used as wedges
+    #     for task in item_list[0]["tasks"]:
+    #         if task["type"] == "Interleaved" and task["parameters"].get(
+    #             "taskIndexList", False
+    #         ):
+    #             current_queue = self.queue_to_dict()
+
+    #             sid = task["sampleID"]
+    #             interleaved_tindex = len(current_queue[sid]["tasks"]) - 1
+
+    #             tindex_list = sorted(task["parameters"]["taskIndexList"])
+
+    #             # Swap first "wedge task" and the actual interleaved collection
+    #             # so that the interleaved task is the first task
+    #             self.swap_task_entry(sid, interleaved_tindex, tindex_list[0])
+
+    #             # We remove the swapped wedge index from the list, (now pointing
+    #             # at the interleaved collection) and add its new position
+    #             # (last task item) to the list.
+    #             tindex_list = tindex_list[1:]
+    #             tindex_list.append(interleaved_tindex)
+
+    #             # The delete operation can be done all in one call if we make sure
+    #             # that we remove the items starting from the end (not altering
+    #             # previous indices)
+    #             for ti in reversed(tindex_list):
+    #                 self.delete_entry_at([[sid, int(ti)]])
+
+    #     res = self.queue_to_dict()
+    #     # logging.getLogger("HWR").debug(
+    #     #     "get out queue_add_item()"
+    #     # )
+    #     return res
+
     def queue_add_item(self, item_list):
         """
         Adds the queue items in item_list to the queue. The items in the list can
@@ -1016,39 +1078,61 @@ class Queue(ComponentBase):
             "get in queue_add_item()"
         )
         print("item_list in queue_add_item(): ",item_list)
+        
+        # 1. 递归添加项目
         self._queue_add_item_rec(item_list, None)
 
+        # 2. 处理 Interleaved（交错扫描）的特殊逻辑
         # Handling interleaved data collections, swap interleave task with
         # the first of the data collections that are used as wedges, and then
         # remove all collections that were used as wedges
-        for task in item_list[0]["tasks"]:
-            if task["type"] == "Interleaved" and task["parameters"].get(
-                "taskIndexList", False
-            ):
-                current_queue = self.queue_to_dict()
+        if item_list and "tasks" in item_list[0]:
+            for task in item_list[0]["tasks"]:
+                if task["type"] == "Interleaved" and task["parameters"].get(
+                    "taskIndexList", False
+                ):
+                    current_queue = self.queue_to_dict()
 
-                sid = task["sampleID"]
-                interleaved_tindex = len(current_queue[sid]["tasks"]) - 1
+                    sid = task["sampleID"]
+                    # 判空保护：如果该样品在当前队列中不存在，跳过处理
+                    if sid not in current_queue:
+                         continue
 
-                tindex_list = sorted(task["parameters"]["taskIndexList"])
+                    interleaved_tindex = len(current_queue[sid]["tasks"]) - 1
 
-                # Swap first "wedge task" and the actual interleaved collection
-                # so that the interleaved task is the first task
-                self.swap_task_entry(sid, interleaved_tindex, tindex_list[0])
+                    tindex_list = sorted(task["parameters"]["taskIndexList"])
 
-                # We remove the swapped wedge index from the list, (now pointing
-                # at the interleaved collection) and add its new position
-                # (last task item) to the list.
-                tindex_list = tindex_list[1:]
-                tindex_list.append(interleaved_tindex)
+                    # Swap first "wedge task" and the actual interleaved collection
+                    # so that the interleaved task is the first task
+                    self.swap_task_entry(sid, interleaved_tindex, tindex_list[0])
 
-                # The delete operation can be done all in one call if we make sure
-                # that we remove the items starting from the end (not altering
-                # previous indices)
-                for ti in reversed(tindex_list):
-                    self.delete_entry_at([[sid, int(ti)]])
+                    # We remove the swapped wedge index from the list, (now pointing
+                    # at the interleaved collection) and add its new position
+                    # (last task item) to the list.
+                    tindex_list = tindex_list[1:]
+                    tindex_list.append(interleaved_tindex)
 
+                    # The delete operation can be done all in one call if we make sure
+                    # that we remove the items starting from the end (not altering
+                    # previous indices)
+                    for ti in reversed(tindex_list):
+                        self.delete_entry_at([[sid, int(ti)]])
+
+        # 3. 获取最新的队列状态字典
         res = self.queue_to_dict()
+        
+        # ==================== 调试代码 START ====================
+        # 这里打印出 sample_order，帮您确认添加后样品到底进去了没
+        try:
+            logging.getLogger("MX3.HWR").info(f"[DEBUG] Queue result keys: {list(res.keys())}")
+            if "sample_order" in res:
+                 logging.getLogger("MX3.HWR").info(f"[DEBUG] Sample Order: {res['sample_order']}")
+            else:
+                 logging.getLogger("MX3.HWR").warning("[DEBUG] 'sample_order' key missing in queue result!")
+        except Exception as e:
+            logging.getLogger("MX3.HWR").error(f"[DEBUG] Error logging queue info: {e}")
+        # ==================== 调试代码 END ======================
+
         # logging.getLogger("HWR").debug(
         #     "get out queue_add_item()"
         # )
@@ -1953,6 +2037,14 @@ class Queue(ComponentBase):
         logging.getLogger("HWR").debug(
             "get in queue_model_child_added()"
         )#添加
+        if hasattr(child, "get_origin") and child.get_origin() == ORIGIN_MX3:
+             return
+
+        if parent._node_id is None:
+            logging.getLogger("MX3.HWR").warning(
+                "[QUEUE] Ignored child_added signal: parent._node_id is None (likely during initialization/clearing)."
+            )
+            return
 
         parent_model, parent_entry = self.get_entry(parent._node_id)
         child_model, child_entry = self.get_entry(child._node_id)

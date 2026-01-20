@@ -162,6 +162,14 @@ export default class SampleImage extends React.Component {
   }
 
   onMouseMove(options) {
+    // 1. 先打原始值
+    const rawX = options.e.layerX;
+    const rawY = options.e.layerY;
+    console.log('mouse raw', rawX, rawY, 'imageRatio', this.props.imageRatio);
+
+    // 2. 统一用“原始像素”坐标
+    // const x = rawX / this.props.imageRatio;
+    // const y = rawY / this.props.imageRatio;
     if (this.props.clickCentring && this.props.clickCentringClicksLeft > 0) {
       if (this.centringVerticalLine !== undefined) {
         this.canvas.remove(this.centringVerticalLine);
@@ -170,6 +178,8 @@ export default class SampleImage extends React.Component {
       this.centringVerticalLine = makeCentringVerticalLine(
         (options.e.layerX + 1.5) / this.props.imageRatio,
         (options.e.layerY + 1) / this.props.imageRatio,
+        // x,
+        // y,
         this.props.imageRatio,
         this.canvas.height
       );
@@ -182,6 +192,8 @@ export default class SampleImage extends React.Component {
         this.centringHorizontalLine = makeCentringHorizontalLine(
           (options.e.layerX + 1.5) / this.props.imageRatio,
           (options.e.layerY + 1) / this.props.imageRatio,
+          // x,
+          // y,
           this.props.imageRatio,
           this.canvas.width
         );
@@ -195,6 +207,8 @@ export default class SampleImage extends React.Component {
         this.canvas,
         options.e.layerX,
         options.e.layerY
+        // x,
+        // y
       );
     }
 
@@ -633,6 +647,8 @@ export default class SampleImage extends React.Component {
   configureGrid() {
     const cellSizeX = this.props.beamSize.x * 1000;
     const cellSizeY = this.props.beamSize.y * 1000;
+    console.log('configureGrid cellSizeX', cellSizeX, 'cellSizeY', cellSizeY);
+    // console.log('beamSize', this.props.beamSize);
     this.drawGridPlugin.setScale(this.props.imageRatio);
     this.drawGridPlugin.setPixelsPerMM(this.props.pixelsPerMm);
     this.drawGridPlugin.setCellSize(cellSizeX, cellSizeY);

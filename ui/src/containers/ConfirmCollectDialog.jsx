@@ -255,72 +255,145 @@ export class ConfirmCollectDialog extends React.Component {
    * @property {Object} queue
    * @return {ReactDomNode} Table Markup
    */
+  // taskTable() {
+  //   const tasks = this.tasksToCollect();
+  //   const summary = this.collectionSummary();
+  //   let table = (
+  //     <div style={{ marginBottom: '1em', borderRadius: '5px',
+  //       backgroundColor: 'rgba(247, 211, 35, 0.27)',
+  //       padding: '1em', width: 'auto'
+  //     }}
+  //     >
+  //       No tasks added to any of the samples, you have the
+  //       possibility to add tasks while the queue is running. <br />
+  //       The queue is executed sample by sample and will wait until
+  //       <b> Mount Next Sample </b> is pressed before mounting the
+  //       next sample <br />
+  //     </div>);
+
+  //   if (summary.numTasks > 0) {
+  //     table = (
+  //       <div className="scroll">
+  //       <Table responsive striped bordered hover>
+  //         <thead id="table-head">
+  //           <tr>
+  //             <th>Type</th>
+  //             <th>Sample</th>
+  //             <th>Path</th>
+  //             <th># Images</th>
+  //           </tr>
+  //         </thead>
+  //         <tbody id="table-body">
+  //           {tasks.map((task) => {
+  //             let {parameters} = task;
+  //             const sample = this.props.sampleGrid.sampleList[task.sampleID];
+  //             const sampleName = `${sample.sampleName} - ${sample.proteinAcronym}`;
+
+  //             if (task.type === 'Interleaved') {
+  //               parameters = task.parameters.wedges[0].parameters;
+  //             }
+
+  //             return (
+  //               <OverlayTrigger
+  //                 key={task.queueID}
+  //                 bsClass="collect-confirm-dialog-overlay-trigger"
+  //                 placement="bottom"
+  //                 overlay={this.taskPopover(task)}
+  //               >
+  //                 <tr id={task.queueID}>
+  //                   <td>{task.label}</td>
+  //                 <td>{sampleName} ({sample.location})</td>
+  //                   <td>
+  //                     <b style={{ color: '#337ab7' }} >
+  //                       ...{parameters.fullPath.split(this.props.login.rootPath)}
+  //                     </b>
+  //                   </td>
+  //                   <td>{parameters.num_images || '-'}</td>
+  //                 </tr>
+  //               </OverlayTrigger>
+  //             );})}
+  //         </tbody>
+  //       </Table>
+  //       </div>
+  //     );
+  //   }
+
+  //   return table;
+  // }
   taskTable() {
-    const tasks = this.tasksToCollect();
-    const summary = this.collectionSummary();
-    let table = (
-      <div style={{ marginBottom: '1em', borderRadius: '5px',
-        backgroundColor: 'rgba(247, 211, 35, 0.27)',
-        padding: '1em', width: 'auto'
-      }}
-      >
-        No tasks added to any of the samples, you have the
-        possibility to add tasks while the queue is running. <br />
-        The queue is executed sample by sample and will wait until
-        <b> Mount Next Sample </b> is pressed before mounting the
-        next sample <br />
-      </div>);
-
-    if (summary.numTasks > 0) {
-      table = (
-        <div className="scroll">
-        <Table responsive striped bordered hover>
-          <thead id="table-head">
-            <tr>
-              <th>Type</th>
-              <th>Sample</th>
-              <th>Path</th>
-              <th># Images</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-            {tasks.map((task) => {
-              let {parameters} = task;
-              const sample = this.props.sampleGrid.sampleList[task.sampleID];
-              const sampleName = `${sample.sampleName} - ${sample.proteinAcronym}`;
-
-              if (task.type === 'Interleaved') {
-                parameters = task.parameters.wedges[0].parameters;
-              }
-
-              return (
-                <OverlayTrigger
-                  key={task.queueID}
-                  bsClass="collect-confirm-dialog-overlay-trigger"
-                  placement="bottom"
-                  overlay={this.taskPopover(task)}
-                >
-                  <tr id={task.queueID}>
-                    <td>{task.label}</td>
-                  <td>{sampleName} ({sample.location})</td>
-                    <td>
-                      <b style={{ color: '#337ab7' }} >
-                        ...{parameters.fullPath.split(this.props.login.rootPath)}
-                      </b>
-                    </td>
-                    <td>{parameters.num_images || '-'}</td>
-                  </tr>
-                </OverlayTrigger>
-              );})}
-          </tbody>
-        </Table>
-        </div>
-      );
-    }
-
-    return table;
-  }
-
+        const tasks = this.tasksToCollect();
+        const summary = this.collectionSummary();
+        let table = (
+          <div style={{ marginBottom: '1em', borderRadius: '5px',
+            backgroundColor: 'rgba(247, 211, 35, 0.27)',
+            padding: '1em', width: 'auto'
+          }}
+          >
+            No tasks added to any of the samples, you have the
+            possibility to add tasks while the queue is running. <br />
+            The queue is executed sample by sample and will wait until
+            <b> Mount Next Sample </b> is pressed before mounting the
+            next sample <br />
+          </div>);
+    
+        if (summary.numTasks > 0) {
+          table = (
+            <div className="scroll">
+            <Table responsive striped bordered hover>
+              <thead id="table-head">
+                <tr>
+                  <th>Type</th>
+                  <th>Sample</th>
+                  <th>Path</th>
+                  <th># Images</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                {tasks.map((task) => {
+                  let {parameters} = task;
+                  const sample = this.props.sampleGrid.sampleList[task.sampleID];
+    
+                  /* ================= 修复代码 START ================= */
+                  // 关键修复：如果找不到样品信息，直接跳过，防止白屏
+                  if (!sample) {
+                      console.warn(`[ConfirmCollectDialog] Task ${task.queueID} refers to missing sampleID: ${task.sampleID}`);
+                      return null;
+                  }
+                  /* ================= 修复代码 END =================== */
+    
+                  const sampleName = `${sample.sampleName} - ${sample.proteinAcronym}`;
+    
+                  if (task.type === 'Interleaved') {
+                    parameters = task.parameters.wedges[0].parameters;
+                  }
+    
+                  return (
+                    <OverlayTrigger
+                      key={task.queueID}
+                      bsClass="collect-confirm-dialog-overlay-trigger"
+                      placement="bottom"
+                      overlay={this.taskPopover(task)}
+                    >
+                      <tr id={task.queueID}>
+                        <td>{task.label}</td>
+                      <td>{sampleName} ({sample.location})</td>
+                        <td>
+                          <b style={{ color: '#337ab7' }} >
+                            ...{parameters.fullPath.split(this.props.login.rootPath)}
+                          </b>
+                        </td>
+                        <td>{parameters.num_images || '-'}</td>
+                      </tr>
+                    </OverlayTrigger>
+                  );})}
+              </tbody>
+            </Table>
+            </div>
+          );
+        }
+    
+        return table;
+      }
   render() {
     const autoMountNext = this.props.queue.queue.length > 1;
     return (
