@@ -146,7 +146,7 @@ class SampleView(ComponentBase):
         self._click_count += 1
 
     def centring_remove_current_point(self):
-        print("get in centring_remove_current_point() in sampleview.py")
+        # print("get in centring_remove_current_point() in sampleview.py")
         if self._centring_point_id:
             HWR.beamline.sample_view.delete_shape(self._centring_point_id)
             self._emit_shapes_updated()
