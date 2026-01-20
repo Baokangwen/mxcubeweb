@@ -2,8 +2,9 @@ import React from 'react';
 import withRouter from '../components/WithRouter'
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Row, Col, Table, OverlayTrigger,
-  Tooltip, Button, Dropdown,Pagination
+import {
+  Row, Col, Table, OverlayTrigger,
+  Tooltip, Button, Dropdown, Pagination
 } from 'react-bootstrap';
 
 import LazyLoad from 'react-lazyload';
@@ -12,7 +13,7 @@ import Collapsible from 'react-collapsible';
 import "react-contexify/dist/ReactContexify.css";
 
 import { MdRemove, MdFlare, Md360 } from "react-icons/md";
-import { BsSquare, BsCheck2Square, BsDashSquare, BsChevronUp, BsChevronDown} from "react-icons/bs";
+import { BsSquare, BsCheck2Square, BsDashSquare, BsChevronUp, BsChevronDown } from "react-icons/bs";
 
 import { BiMenu } from "react-icons/bi";
 
@@ -27,9 +28,11 @@ import "slick-carousel/slick/slick-theme.css";
 
 import { QUEUE_STOPPED, QUEUE_RUNNING, isCollected, hasLimsData } from '../constants';
 
-import { toggleMovableAction,
+import {
+  toggleMovableAction,
   selectSamplesAction,
-  sendSetSampleOrderAction, showGenericContextMenu } from '../actions/sampleGrid';
+  sendSetSampleOrderAction, showGenericContextMenu
+} from '../actions/sampleGrid';
 
 import { deleteTask, addSampleAndMount } from '../actions/queue';
 
@@ -52,8 +55,8 @@ class SampleGridTableContainer extends React.Component {
     super(props);
     this.state = {
       loadGridTable: false,
-      pageNumberActivated : 1,
-      puck_num:this.props.sampleChanger.contents.children.length
+      pageNumberActivated: 1,
+      puck_num: this.props.sampleChanger.contents.children.length
     };
     this.shouldComponentUpdate = this.shouldComponentUpdate.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
@@ -110,8 +113,8 @@ class SampleGridTableContainer extends React.Component {
 
   shouldComponentUpdate(nextProps) {
     return this.props.queue.queue !== nextProps.queue.queue ||
-           Object.keys(this.props.sampleList) !== Object.keys(nextProps.sampleList) ||
-           this.props.order !== nextProps.order;
+      Object.keys(this.props.sampleList) !== Object.keys(nextProps.sampleList) ||
+      this.props.order !== nextProps.order;
   }
 
 
@@ -203,7 +206,7 @@ class SampleGridTableContainer extends React.Component {
   selectItemUnderCursor(e, item) {
     this.sampleGridItemsSelectedHandler(e, [item]);
   }
-  
+
 
   /**
    * Handles multiple item selection on mouseDown, initializes the 'rubberband'
@@ -219,7 +222,7 @@ class SampleGridTableContainer extends React.Component {
     selectionRubberBand.style.height = '0px';
     this.showRubberBand = true;
 
-    if(this.props.contextMenu.show) {
+    if (this.props.contextMenu.show) {
       this.props.showGenericContextMenu(false, null, 0, 0);
       this.showRubberBand = false;
       selectionRubberBand.style.display = 'none';
@@ -277,15 +280,15 @@ class SampleGridTableContainer extends React.Component {
   */
   onKeyDown(e) {
     switch (e.key) {
-    case 'Escape': {
-      console.log("onKeyDown")
-      this.props.selectSamples(Object.keys(this.props.sampleList), false);
-      const selectionRubberBand = document.querySelector('#selectionRubberBand');
-      this.showRubberBand = false;
-      selectionRubberBand.style.display = 'none';
-    break;
-    }
-    // No default
+      case 'Escape': {
+        console.log("onKeyDown")
+        this.props.selectSamples(Object.keys(this.props.sampleList), false);
+        const selectionRubberBand = document.querySelector('#selectionRubberBand');
+        this.showRubberBand = false;
+        selectionRubberBand.style.display = 'none';
+        break;
+      }
+      // No default
     }
   }
 
@@ -303,25 +306,25 @@ class SampleGridTableContainer extends React.Component {
    *
    * return {boolean} true if item is to be included otherwise false
    */
-    mutualExclusiveFilterOption(sample, o1, o2, testFun) {
-      let includeItem = false;
-  
-      // First case is included for clarity since the two options
-      // cancel each other out. Dont do anything same as both false. Otherwise
-      // apply filter.
-  
-      if (this.props.filterOptions[o1] && this.props.filterOptions[o2]) {
-        includeItem = true;
-      } else if (!this.props.filterOptions[o1] && !this.props.filterOptions[o2]) {
-        includeItem = true;
-      } else if (this.props.filterOptions[o1]) {
-        includeItem = testFun(sample);
-      } else if (this.props.filterOptions[o2]) {
-        includeItem = !testFun(sample);
-      }
-  
-      return includeItem;
+  mutualExclusiveFilterOption(sample, o1, o2, testFun) {
+    let includeItem = false;
+
+    // First case is included for clarity since the two options
+    // cancel each other out. Dont do anything same as both false. Otherwise
+    // apply filter.
+
+    if (this.props.filterOptions[o1] && this.props.filterOptions[o2]) {
+      includeItem = true;
+    } else if (!this.props.filterOptions[o1] && !this.props.filterOptions[o2]) {
+      includeItem = true;
+    } else if (this.props.filterOptions[o1]) {
+      includeItem = testFun(sample);
+    } else if (this.props.filterOptions[o2]) {
+      includeItem = !testFun(sample);
     }
+
+    return includeItem;
+  }
 
 
   /**
@@ -345,7 +348,7 @@ class SampleGridTableContainer extends React.Component {
       fi = sampleFilter.includes(this.props.filterOptions.text.toLowerCase());
 
       // we can't filter if there is only one cell 
-      if (Object.values(this.props.sampleList).every( cell => cell.cell_no != 1)) {
+      if (Object.values(this.props.sampleList).every(cell => cell.cell_no != 1)) {
         fi &= locationFilter.startsWith(this.props.filterOptions.cellFilter.toLowerCase());
       }
       fi &= this.mutualExclusiveFilterOption(sample, 'inQueue', 'notInQueue', this.inQueueSampleID);
@@ -354,7 +357,7 @@ class SampleGridTableContainer extends React.Component {
     }
 
     return fi;
-  }  
+  }
 
   currentSample(sampleID) {
     let current = false;
@@ -423,7 +426,7 @@ class SampleGridTableContainer extends React.Component {
     e.stopPropagation();
     this.props.showTaskParametersForm(task.type, task.sampleID, task);
   }
-  
+
 
   /**
    * Handels clicks on TaskItem delete button
@@ -444,11 +447,11 @@ class SampleGridTableContainer extends React.Component {
   /**
   * Select Items in a cell for collect
   */
-  pickAllCellPuckItemsOnClick (e, sampleItem, pickSample) {
-    if(pickSample) {
+  pickAllCellPuckItemsOnClick(e, sampleItem, pickSample) {
+    if (pickSample) {
       this.props.addSamplesToQueue(sampleItem);
     }
-    else{
+    else {
       this.props.inQueueDeleteElseAddSamples(sampleItem, false);
     }
     e.stopPropagation();
@@ -459,16 +462,16 @@ class SampleGridTableContainer extends React.Component {
     const allCellSampleCheck = [];
 
     Object.values(this.props.sampleList).filter(sample => sample.cell_no == cell)
-    .forEach(sample => {
-          allCellSample.push(sample.sampleID);
-          if (this.props.inQueue(sample.sampleID) && sample.checked) {
-        allCellSampleCheck.push(sample.sampleID);
+      .forEach(sample => {
+        allCellSample.push(sample.sampleID);
+        if (this.props.inQueue(sample.sampleID) && sample.checked) {
+          allCellSampleCheck.push(sample.sampleID);
         }
-    });
+      });
     return [allCellSample, allCellSampleCheck];
   }
 
-  
+
   getSampleListFilteredByCellPuck(cell, puck) {
     const allCellSample = [];
     const allCellSampleCheck = [];
@@ -476,35 +479,35 @@ class SampleGridTableContainer extends React.Component {
     const allPuckSample = [];
     const allPuckSampleCheck = [];
 
-    if(cell && puck === null) {
+    if (cell && puck === null) {
       Object.values(this.props.sampleList).filter(sample => sample.cell_no == cell)
-      .forEach(sample => {
-        if (this.filter(sample.sampleID)) {
-          allCellSample.push(sample.sampleID);
-          if (this.props.inQueue(sample.sampleID) && sample.checked) {
-            allCellSampleCheck.push(sample.sampleID)
+        .forEach(sample => {
+          if (this.filter(sample.sampleID)) {
+            allCellSample.push(sample.sampleID);
+            if (this.props.inQueue(sample.sampleID) && sample.checked) {
+              allCellSampleCheck.push(sample.sampleID)
+            }
           }
-        }
-    });
-      return [allCellSample, allCellSampleCheck]  
-  }
+        });
+      return [allCellSample, allCellSampleCheck]
+    }
 
     else if (puck !== null) {
       Object.values(this.props.sampleList).filter(sample => sample.cell_no == cell && sample.puck_no == puck)
-      .forEach(sample => {
-        if (this.filter(sample.sampleID)) {
-          allPuckSample.push(sample.sampleID);
-          if (this.props.inQueue(sample.sampleID) && sample.checked) {
-            allPuckSampleCheck.push(sample.sampleID)
+        .forEach(sample => {
+          if (this.filter(sample.sampleID)) {
+            allPuckSample.push(sample.sampleID);
+            if (this.props.inQueue(sample.sampleID) && sample.checked) {
+              allPuckSampleCheck.push(sample.sampleID)
+            }
           }
-        }
-    });
+        });
       return [allPuckSample, allPuckSampleCheck]
     }
 
-    return [[], [] ]  
+    return [[], []]
   }
-  
+
 
   displayContextMenu(e, contextMenuID, sampleID) {
     e.preventDefault();
@@ -528,7 +531,7 @@ class SampleGridTableContainer extends React.Component {
   }
 
   itemsControls(cell, puck) {
-    let icon = <BsSquare size='0.9em'/>;
+    let icon = <BsSquare size='0.9em' />;
     let pickSample = true;
     const filterList = this.getSampleListFilteredByCellPuck(cell, puck);
 
@@ -536,12 +539,12 @@ class SampleGridTableContainer extends React.Component {
     const allPuckSampleCheck = filterList[1];
 
     if (allPuckSample.length === allPuckSampleCheck.length) {
-      icon = <BsCheck2Square size='0.9em'/>;
+      icon = <BsCheck2Square size='0.9em' />;
       pickSample = false;
     }
 
-    else if(allPuckSample.length !== allPuckSampleCheck.length && allPuckSampleCheck.length > 0) {
-      icon = <BsDashSquare size='0.9em'/>;
+    else if (allPuckSample.length !== allPuckSampleCheck.length && allPuckSampleCheck.length > 0) {
+      icon = <BsDashSquare size='0.9em' />;
       pickSample = false;
     }
 
@@ -550,14 +553,14 @@ class SampleGridTableContainer extends React.Component {
       <OverlayTrigger
         placement="auto"
         overlay={(
-        <Tooltip id="pick-sample">{pickSample? 'Pick samples/ Add to Queue' : 'Unpick samples / Remove from Queue'}</Tooltip>
+          <Tooltip id="pick-sample">{pickSample ? 'Pick samples/ Add to Queue' : 'Unpick samples / Remove from Queue'}</Tooltip>
         )}
       >
         <Button
           variant="content"
           disabled={this.props.current && this.props.picked}
           className="pick-puck-checkbox-button"
-          onClick={(e) => this.pickAllCellPuckItemsOnClick(e,  allPuckSample, pickSample)}
+          onClick={(e) => this.pickAllCellPuckItemsOnClick(e, allPuckSample, pickSample)}
         >
           <i>{icon}</i>
         </Button>
@@ -567,16 +570,16 @@ class SampleGridTableContainer extends React.Component {
 
   getSampleItemCollapsibleHeaderActions(cell) {
     const cellMenuID = 'samples-grid-table-context-menu-cell'
-    return(
+    return (
       <div className='sample-items-collapsible-header-actions'>
         <b className='me-2 mt-1'>Cell {cell}</b>
         {this.itemsControls(cell, null)}
         <span
           title='Cell Options'
           className='samples-grid-table-context-menu-icon'
-          onClick={(e) => {this.displayPuckCellContextMenu(e, cellMenuID, cell, null)}}
+          onClick={(e) => { this.displayPuckCellContextMenu(e, cellMenuID, cell, null) }}
         >
-          <BiMenu size='1.5em'/>
+          <BiMenu size='1.5em' />
         </span>
       </div>
     )
@@ -586,7 +589,7 @@ class SampleGridTableContainer extends React.Component {
     return (
       <div className='sample-items-collapsible-header'>
         {this.getSampleItemCollapsibleHeaderActions(cell)}
-        <BsChevronUp className={cssClass} size="1em"/>
+        <BsChevronUp className={cssClass} size="1em" />
       </div>
     )
   }
@@ -595,7 +598,7 @@ class SampleGridTableContainer extends React.Component {
     return (
       <div className='sample-items-collapsible-header'>
         {this.getSampleItemCollapsibleHeaderActions(cell)}
-        <BsChevronDown className={cssClass} size="1em"/>
+        <BsChevronDown className={cssClass} size="1em" />
       </div>
     )
   }
@@ -606,8 +609,8 @@ class SampleGridTableContainer extends React.Component {
     this.props.order.forEach(key => {
       const sample = this.props.sampleList[key];
       if (this.filter(key)) {
-          sampleItemList.push(<li key={key}>{sample.sampleID}</li>);
-        }
+        sampleItemList.push(<li key={key}>{sample.sampleID}</li>);
+      }
     });
 
     return sampleItemList;
@@ -627,27 +630,28 @@ class SampleGridTableContainer extends React.Component {
     const sampleItemList = [];
 
     Object.values(this.props.sampleList).filter(sample => sample.cell_no == cell && sample.puck_no == puck)
-    .forEach(sample => {
+      .forEach(sample => {
 
-      const key = sample.sampleID;
+        const key = sample.sampleID;
 
-      const picked= this.props.inQueue(sample.sampleID) && sample.checked;
+        const picked = this.props.inQueue(sample.sampleID) && sample.checked;
 
-      const classes = classNames('samples-grid-table-li',
-      { 
-        'samples-grid-table-item-selected': this.props.selected[sample.sampleID],
-        'samples-grid-table-item-to-be-collected': picked,
-        'samples-grid-table-item-collected': isCollected(sample) });
+        const classes = classNames('samples-grid-table-li',
+          {
+            'samples-grid-table-item-selected': this.props.selected[sample.sampleID],
+            'samples-grid-table-item-to-be-collected': picked,
+            'samples-grid-table-item-collected': isCollected(sample)
+          });
 
-      const settings = {
-        dots: false,
-        infinite: false,
-        speed: 100,
-        slidesToShow: 6,
-        slidesToScroll: 6
-      };
+        const settings = {
+          dots: false,
+          infinite: false,
+          speed: 100,
+          slidesToShow: 6,
+          slidesToScroll: 6
+        };
 
-      if (this.filter(key) && sample.cell_no == cell && sample.puck_no == puck) {
+        if (this.filter(key) && sample.cell_no == cell && sample.puck_no == puck) {
           let contextMenuID = 'samples-grid-table-context-menu';
           if (this.currentSample(sample.sampleID)) {
             contextMenuID = 'samples-grid-table-context-menu-mounted';
@@ -657,51 +661,51 @@ class SampleGridTableContainer extends React.Component {
             <div
               className={classes}
               key={key}
-              onContextMenu={(e) => {this.displayContextMenu(e, contextMenuID, sample.sampleID)}}
-              onClick={(e) => {this.selectItemUnderCursor(e, sample.sampleID)}}
+              onContextMenu={(e) => { this.displayContextMenu(e, contextMenuID, sample.sampleID) }}
+              onClick={(e) => { this.selectItemUnderCursor(e, sample.sampleID) }}
             >
               <SampleGridTableItem
-                  key={key}
-                  itemKey={key}
-                  pickButtonOnClickHandler={this.sampleItemPickButtonOnClickHandler}
-                  sampleData={sample}
-                  queueOrder={this.props.order.filter(keys =>this.props.queue.queue.includes(keys)
-                    && this.props.sampleList[keys].checked).indexOf(key) + 1}
-                  selected={this.props.selected[sample.sampleID]}
-                  current={this.currentSample(sample.sampleID)}
-                  picked={picked}
+                key={key}
+                itemKey={key}
+                pickButtonOnClickHandler={this.sampleItemPickButtonOnClickHandler}
+                sampleData={sample}
+                queueOrder={this.props.order.filter(keys => this.props.queue.queue.includes(keys)
+                  && this.props.sampleList[keys].checked).indexOf(key) + 1}
+                selected={this.props.selected[sample.sampleID]}
+                current={this.currentSample(sample.sampleID)}
+                picked={picked}
+              >
+                <Slider
+                  className="samples-grid-table-item-tasks"
+                  {...settings}
                 >
-                  <Slider
-                    className="samples-grid-table-item-tasks"
-                    {...settings}
-                  >
-                    {sample.tasks.map((taskData, i) => (
-                      <TaskItem
-                        key={`task-${i}`}
-                        taskItemOnClick={this.taskItemOnClickHandler}
-                        showDialog={this.props.showDialog}
-                        deleteButtonOnClick={this.taskItemDeleteButtonOnClickHandler}
-                        taskData={taskData}
-                        taskIndex={i}
-                      />))
-                    }
-                  </Slider>
-                </SampleGridTableItem>
+                  {sample.tasks.map((taskData, i) => (
+                    <TaskItem
+                      key={`task-${i}`}
+                      taskItemOnClick={this.taskItemOnClickHandler}
+                      showDialog={this.props.showDialog}
+                      deleteButtonOnClick={this.taskItemDeleteButtonOnClickHandler}
+                      taskData={taskData}
+                      taskIndex={i}
+                    />))
+                  }
+                </Slider>
+              </SampleGridTableItem>
             </div>
-            );
-          }
-      return null
-    });
+          );
+        }
+        return null
+      });
 
     return sampleItemList;
   }
-  
+
   getSampleTable(colsm) {
     const scContent = this.props.sampleChanger.contents;
     const tableCell = [];
 
     //ssrf
-    const sliceIndex = (this.state.pageNumberActivated-1)*5 
+    const sliceIndex = (this.state.pageNumberActivated - 1) * 5
     console.log('sliceIndex')
     console.log(sliceIndex)
 
@@ -712,47 +716,47 @@ class SampleGridTableContainer extends React.Component {
     console.log("cell_original.children.length")
     console.log(cell_original.children.length)
 
-    
+
     const cell = {
       ...cell_original,
-      children:cell_original.children.slice(sliceIndex,sliceIndex+5)
+      children: cell_original.children.slice(sliceIndex, sliceIndex + 5)
     };
     console.log("cell i want, cell after slice:")
     console.log(cell)
 
 
     // scContent.children.map(cell => {
-        // console.log("cell in map")
-        // console.log(cell)
-        // console.log('this.props.filterOptions.cellFilter.toLowerCase()')
-        // console.log(this.props.filterOptions.cellFilter.toLowerCase())
-        if (this.props.filterOptions.cellFilter.toLowerCase() === cell.name
-          || this.props.filterOptions.cellFilter.toLowerCase() === '') {
-            // console.log('get in if ')     
-          const nbpuck = [];
-          // we won't display the cell / table  if all puck in the cell are empty 
-          cell.children.map((puck, idxtd)=> {
-          if(this.getSampleItems(cell.name, idxtd+1).length > 0) { 
-            // console.log('cell.name.idxtd+1')
-            // console.log(cell.name,idxtd+1)
-              nbpuck.push(puck);
-            }
-          });
-          // console.log('nbpuck')
-          // console.log(nbpuck)
+    // console.log("cell in map")
+    // console.log(cell)
+    // console.log('this.props.filterOptions.cellFilter.toLowerCase()')
+    // console.log(this.props.filterOptions.cellFilter.toLowerCase())
+    if (this.props.filterOptions.cellFilter.toLowerCase() === cell.name
+      || this.props.filterOptions.cellFilter.toLowerCase() === '') {
+      // console.log('get in if ')     
+      const nbpuck = [];
+      // we won't display the cell / table  if all puck in the cell are empty 
+      cell.children.map((puck, idxtd) => {
+        if (this.getSampleItems(cell.name, idxtd + 1).length > 0) {
+          // console.log('cell.name.idxtd+1')
+          // console.log(cell.name,idxtd+1)
+          nbpuck.push(puck);
+        }
+      });
+      // console.log('nbpuck')
+      // console.log(nbpuck)
 
-          if (nbpuck.length > 0) {   
-          let colsmP = colsm
-            if (nbpuck.length === 1) {
-            colsmP = 3;
-          }
-          else if (nbpuck.length >= 4) {
-            colsmP = 12;
-          }
-            tableCell.push(
-            <Col sm={colsmP} key={`cell-${cell.name}`}>
-              <LazyLoad unmountIfInvisible once={scContent.children.length <=2} height={1325} offset={100}>
-                  {/* <Collapsible transitionTime={300}
+      if (nbpuck.length > 0) {
+        let colsmP = colsm
+        if (nbpuck.length === 1) {
+          colsmP = 3;
+        }
+        else if (nbpuck.length >= 4) {
+          colsmP = 12;
+        }
+        tableCell.push(
+          <Col sm={colsmP} key={`cell-${cell.name}`}>
+            <LazyLoad unmountIfInvisible once={scContent.children.length <= 2} height={1325} offset={100}>
+              {/* <Collapsible transitionTime={300}
                     className='sample-items-collapsible'
                     openedClassName="sample-items-collapsible"
                     open
@@ -760,73 +764,73 @@ class SampleGridTableContainer extends React.Component {
                     trigger={this.getCollapsibleHeaderClose(cell.name, 'collapsible-arrow-c')}
                     triggerWhenOpen={this.getCollapsibleHeaderOpen(cell.name, 'collapsible-arrow-c')}
                   > */}
-                    <Table bordered responsive size="sm" className='sample-items-table'>
-                      <thead>
-                        <tr>
-                          {cell.children.map((puck, idxth)=> {    // 此处决定几个puck map循环
-                          if(this.getSampleItems(cell.name, idxth+1).length > 0) {
-                            // console.log('get in if(this.getSampleItems(cell.name, idxth+1).length > 0)')
-                            // console.log('cell.name, idxth+1 in thread')
-                            // console.log(cell.name,idxth+1)
-                            // console.log('puck in thread')
-                            // console.log(puck)
-                              const puckMenuID = 'samples-grid-table-context-menu-puck'
-                              return(
-                              <th key={`${cell.name}-th-${puck.name}`} className='sample-items-table-row-header-th'>
-                                  <span style={{ marginLeft: '5px', marginTop: '4px', float:'left'}}>
-                                    Puck {puck.name}
-                                    {puck.id != '' ?
-                                      <div className='sample-items-puck-code' title={puck.id}>
-                                        Code : {puck.id}
-                                      </div>
-                                      :
-                                      null
-                                    }
-                                  </span>
-                                  <span style={{ marginTop: '15px', marginRight: '2px'}}>
-                                  {this.itemsControls(cell.name, Number(puck.name))}
-                                  </span>
-                                  <span
-                                    title='Puck Options'
-                                    className='samples-grid-table-context-menu-icon'
-                                    onClick={(e) => {this.displayPuckCellContextMenu(e, puckMenuID, cell.name, Number(puck.name))}}
-                                  >
-                                    <BiMenu size='1.5em'/>
-                                  </span>
-                                </th>
-                              )
-                            }
-                            return null;
-                        })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          {cell.children.map((puck, idxtd)=> {
-                          if(this.getSampleItems(cell.name, idxtd+1).length > 0) {  
-                            // console.log("cell .name ,idxtd+1 in tbody")
-                            // console.log(cell .name ,idxtd+1)
-                              return(
-                                <td key={`${cell.name}-td-${puck.name}`} className={`sample-items-table-column-body custom-table-border-${idxtd+1}`}>
-                                  {/* {this.getSampleItems(cell.name, idxtd+1)}  源码，改 */}
-                                  {/* 这里的getSampleItems会根据cell.name 和 puck.name返回一整个puck即16个样品的组件 */}
-                                  {this.getSampleItems(cell.name, Number(puck.name))}   
-                                </td>
-                              )
-                            }
-                            return null;
-                          })}
-                        </tr>
-                      </tbody>
-                    </Table>
-                  {/* </Collapsible> */}
-              </LazyLoad>
-              </Col>
-            );
-          }
-        }
-        // return null;
-      // });
+              <Table bordered responsive size="sm" className='sample-items-table'>
+                <thead>
+                  <tr>
+                    {cell.children.map((puck, idxth) => {    // 此处决定几个puck map循环
+                      if (this.getSampleItems(cell.name, idxth + 1).length > 0) {
+                        // console.log('get in if(this.getSampleItems(cell.name, idxth+1).length > 0)')
+                        // console.log('cell.name, idxth+1 in thread')
+                        // console.log(cell.name,idxth+1)
+                        // console.log('puck in thread')
+                        // console.log(puck)
+                        const puckMenuID = 'samples-grid-table-context-menu-puck'
+                        return (
+                          <th key={`${cell.name}-th-${puck.name}`} className='sample-items-table-row-header-th'>
+                            <span style={{ marginLeft: '5px', marginTop: '4px', float: 'left' }}>
+                              Puck {puck.name}
+                              {puck.id != '' ?
+                                <div className='sample-items-puck-code' title={puck.id}>
+                                  Code : {puck.id}
+                                </div>
+                                :
+                                null
+                              }
+                            </span>
+                            <span style={{ marginTop: '15px', marginRight: '2px' }}>
+                              {this.itemsControls(cell.name, Number(puck.name))}
+                            </span>
+                            <span
+                              title='Puck Options'
+                              className='samples-grid-table-context-menu-icon'
+                              onClick={(e) => { this.displayPuckCellContextMenu(e, puckMenuID, cell.name, Number(puck.name)) }}
+                            >
+                              <BiMenu size='1.5em' />
+                            </span>
+                          </th>
+                        )
+                      }
+                      return null;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {cell.children.map((puck, idxtd) => {
+                      if (this.getSampleItems(cell.name, idxtd + 1).length > 0) {
+                        // console.log("cell .name ,idxtd+1 in tbody")
+                        // console.log(cell .name ,idxtd+1)
+                        return (
+                          <td key={`${cell.name}-td-${puck.name}`} className={`sample-items-table-column-body custom-table-border-${idxtd + 1}`}>
+                            {/* {this.getSampleItems(cell.name, idxtd+1)}  源码，改 */}
+                            {/* 这里的getSampleItems会根据cell.name 和 puck.name返回一整个puck即16个样品的组件 */}
+                            {this.getSampleItems(cell.name, Number(puck.name))}
+                          </td>
+                        )
+                      }
+                      return null;
+                    })}
+                  </tr>
+                </tbody>
+              </Table>
+              {/* </Collapsible> */}
+            </LazyLoad>
+          </Col>
+        );
+      }
+    }
+    // return null;
+    // });
     return tableCell;
   }
 
@@ -834,19 +838,19 @@ class SampleGridTableContainer extends React.Component {
 
   paginationBasic() {
     let items = [];
-    const pageNumber = Math.ceil(this.state.puck_num/5)
+    const pageNumber = Math.ceil(this.state.puck_num / 5)
     for (let number = 1; number <= pageNumber; number++) {
       items.push(
-        <Pagination.Item 
-          key={number} 
+        <Pagination.Item
+          key={number}
           active={number === this.state.pageNumberActivated}
-          onClick={(e)=>this.handlePageClick(e,number)}
+          onClick={(e) => this.handlePageClick(e, number)}
         >
           {number}
         </Pagination.Item>,
       );
     }
-    return(
+    return (
       <div>
         <Pagination>{items}</Pagination>
       </div>
@@ -855,9 +859,9 @@ class SampleGridTableContainer extends React.Component {
 
   handlePageClick(event, pageNumber) {
     this.setState({
-        pageNumberActivated: pageNumber
+      pageNumberActivated: pageNumber
     });
-}
+  }
 
 
   /**
@@ -872,25 +876,35 @@ class SampleGridTableContainer extends React.Component {
 
     Object.values(this.props.workflows).forEach((wf) => {
       if (wf.requires.includes('point')) {
-        workflowTasks.point.push({ text: wf.wfname,
+        workflowTasks.point.push({
+          text: wf.wfname,
           action: () => this.props.showWorkflowForm(wf),
-          key: `wf-${wf.wfname}` });
+          key: `wf-${wf.wfname}`
+        });
       } else if (wf.requires.includes('line')) {
-        workflowTasks.line.push({ text: wf.wfname,
+        workflowTasks.line.push({
+          text: wf.wfname,
           action: () => this.props.showWorkflowForm(wf),
-          key: `wf-${wf.wfname}` });
+          key: `wf-${wf.wfname}`
+        });
       } else if (wf.requires.includes('grid')) {
-        workflowTasks.grid.push({ text: wf.wfname,
+        workflowTasks.grid.push({
+          text: wf.wfname,
           action: () => this.props.showWorkflowForm(wf),
-          key: `wf-${wf.wfname}` });
+          key: `wf-${wf.wfname}`
+        });
       } else if (wf.requires.includes('samplegrid')) {
-        workflowTasks.samplegrid.push({ text: wf.wfname,
+        workflowTasks.samplegrid.push({
+          text: wf.wfname,
           action: () => this.props.showWorkflowForm(wf),
-          key: `wf-${wf.wfname}` });
+          key: `wf-${wf.wfname}`
+        });
       } else {
-        workflowTasks.none.push({ text: wf.wfname,
+        workflowTasks.none.push({
+          text: wf.wfname,
           action: () => this.props.showWorkflowForm(wf),
-          key: `wf-${wf.wfname}` });
+          key: `wf-${wf.wfname}`
+        });
       }
     });
 
@@ -915,7 +929,7 @@ class SampleGridTableContainer extends React.Component {
 
     if (sampleData) {
       this.props.addSampleAndMount(sampleData);
-      this.props.router.navigate('/datacollection' , { replace: true });
+      this.props.router.navigate('/datacollection', { replace: true });
     }
   }
 
@@ -927,7 +941,7 @@ class SampleGridTableContainer extends React.Component {
   taskContextMenuItems() {
     return (
       <>
-        <Dropdown.Divider/>
+        <Dropdown.Divider />
         <Dropdown.Header><i className="fas fa-plus" /> Add </Dropdown.Header>
         <Dropdown.Item onClick={this.props.showDataCollectionForm}>
           Data collection
@@ -965,27 +979,27 @@ class SampleGridTableContainer extends React.Component {
   sampleContextMenuMounted() {
     return (
       <>
-      <Dropdown.Item onClick={this.props.addSelectedSamplesToQueue}>
-        <span><i className="fas fa-plus" /> Add to Queue</span>
-      </Dropdown.Item>
-      <Dropdown.Item onClick={this.unmount}>
-        <span><Md360 glyph="share-alt" /> Unmount </span>
-      </Dropdown.Item>
+        <Dropdown.Item onClick={this.props.addSelectedSamplesToQueue}>
+          <span><i className="fas fa-plus" /> Add to Queue</span>
+        </Dropdown.Item>
+        <Dropdown.Item onClick={this.unmount}>
+          <span><Md360 glyph="share-alt" /> Unmount </span>
+        </Dropdown.Item>
       </>
     );
   }
 
-  renderContextMenu (id) {
+  renderContextMenu(id) {
     let menu = <Dropdown.Item href="#/action-1">....</Dropdown.Item>;
-    if(id == 'samples-grid-table-context-menu') {
+    if (id == 'samples-grid-table-context-menu') {
       menu = (
         <>
-        {this.sampleContextMenu()}
-        {this.taskContextMenuItems()}
+          {this.sampleContextMenu()}
+          {this.taskContextMenuItems()}
         </>
       )
     }
-    else if(id == 'samples-grid-table-context-menu-mounted') {
+    else if (id == 'samples-grid-table-context-menu-mounted') {
       menu = (
         <>
           {this.sampleContextMenuMounted()}
@@ -993,7 +1007,7 @@ class SampleGridTableContainer extends React.Component {
         </>
       )
     }
-    else if(id == 'samples-grid-table-context-menu-cell') {
+    else if (id == 'samples-grid-table-context-menu-cell') {
       menu = (
         <>
           <Dropdown.Header>Cell Actions</Dropdown.Header>
@@ -1001,7 +1015,7 @@ class SampleGridTableContainer extends React.Component {
         </>
       )
     }
-    else if(id == 'samples-grid-table-context-menu-puck') {
+    else if (id == 'samples-grid-table-context-menu-puck') {
       menu = (
         <>
           <Dropdown.Header>Puck Actions</Dropdown.Header>
@@ -1021,62 +1035,62 @@ class SampleGridTableContainer extends React.Component {
   render() {
     return (
       this.state.loadGridTable ? (
-      <div>
-        
-        {/* 这里this.props.contextMenu.show，好像一直是false */}
-        {this.props.contextMenu.show ?
-          (
-            <>
-              <MXContextMenu
-                id={this.props.contextMenu.id}
-                show={this.props.contextMenu.show}
-                x={this.props.contextMenu.x}
-                y={this.props.contextMenu.y}
+        <div>
 
+          {/* 这里this.props.contextMenu.show，好像一直是false */}
+          {this.props.contextMenu.show ?
+            (
+              <>
+                <MXContextMenu
+                  id={this.props.contextMenu.id}
+                  show={this.props.contextMenu.show}
+                  x={this.props.contextMenu.x}
+                  y={this.props.contextMenu.y}
+
+                >
+                  {this.renderContextMenu(this.props.contextMenu.id)}
+                </MXContextMenu>
+              </>
+
+            )
+            :
+            null
+          }
+          {this.paginationBasic()}
+          <div className="selection-rubber-band" id="selectionRubberBand" />
+          {this.props.viewMode.mode == 'Graphical View' ?
+            (
+              <Row
+                className="samples-grid-table"
+                onMouseDown={this.onMouseDown}
+                onMouseUp={this.onMouseUp}
+                onMouseMove={this.onMouseMove}
+                xs="auto"
               >
-                {this.renderContextMenu(this.props.contextMenu.id)}
-              </MXContextMenu>
-            </>
-
-          )
-          :
-          null
-        }
-        {this.paginationBasic()}
-        <div className="selection-rubber-band" id="selectionRubberBand" />
-        {this.props.viewMode.mode == 'Graphical View'?
-          (
-          <Row
-            className="samples-grid-table"
-            onMouseDown={this.onMouseDown}
-            onMouseUp={this.onMouseUp}
-            onMouseMove={this.onMouseMove}
-            xs="auto"
-          >
-            <div className="selection-rubber-band" id="selectionRubberBand" />
-            <SampleFlexView
-              cellSampleList={this.getSampleListBydCell}
-            />            
-                {this.getSampleTable('auto')}
-          </Row>
-          )
-          :
-          (
-            <Row
-              className="samples-grid-table"
-              onMouseDown={this.onMouseDown}
-              onMouseUp={this.onMouseUp}
-              onMouseMove={this.onMouseMove}
-              xs="auto"
-                ref={(ref) => { this.containerRef = ref; }}
-            >
                 <div className="selection-rubber-band" id="selectionRubberBand" />
-                {this.getSampleTable(this.isSingleCell()? 12: 6)} 
-            </Row>
-          )
-        }
-      </div>
-      ): (
+                <SampleFlexView
+                  cellSampleList={this.getSampleListBydCell}
+                />
+                {this.getSampleTable('auto')}
+              </Row>
+            )
+            :
+            (
+              <Row
+                className="samples-grid-table"
+                onMouseDown={this.onMouseDown}
+                onMouseUp={this.onMouseUp}
+                onMouseMove={this.onMouseMove}
+                xs="auto"
+                ref={(ref) => { this.containerRef = ref; }}
+              >
+                <div className="selection-rubber-band" id="selectionRubberBand" />
+                {this.getSampleTable(this.isSingleCell() ? 12 : 6)}
+              </Row>
+            )
+          }
+        </div>
+      ) : (
         <div className="widget loading">
           loading...
         </div>
