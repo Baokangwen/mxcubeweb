@@ -378,8 +378,8 @@ class UserManager(BaseUserManager):
                     )
 
         # Only allow in-house log-in from local host
-        if inhouse and not (inhouse and is_local_host()):
-            raise Exception("In-house only allowed from localhost")
+        # if inhouse and not (inhouse and is_local_host()):
+        #     raise Exception("In-house only allowed from localhost")
 
         # Only allow other users to log-in if they are from the same proposal
         if (
@@ -404,10 +404,12 @@ class UserManager(BaseUserManager):
             raise Exception("Remote access disabled")
 
         # Only allow remote logins with existing sessions
-        if self.app.lims.lims_valid_login(login_res) and is_local_host():
-            if not self.app.lims.lims_existing_session(login_res):
-                login_res = self.app.lims.create_lims_session(login_res)
-
+        # if self.app.lims.lims_valid_login(login_res) and is_local_host():
+        #     if not self.app.lims.lims_existing_session(login_res):
+        #         login_res = self.app.lims.create_lims_session(login_res)
+        if (self.app.lims.lims_valid_login(login_res) and not self.app.lims.lims_existing_session(login_res)):
+            login_res = self.app.lims.create_lims_session(login_res)
+            
             msg = "[LOGIN] Valid login from local host (%s)" % str(info)
             logging.getLogger("MX3.HWR").info(msg)
         elif self.app.lims.lims_valid_login(
