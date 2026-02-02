@@ -7,6 +7,8 @@ import io
 import math
 import re
 import json
+import ldap3
+import logging
 
 from mxcubecore import HardwareRepository as HWR
 from mxcubecore.model import queue_model_objects as qmo
@@ -183,80 +185,144 @@ class Lims(ComponentBase):
     def lims_valid_login(self, login_res):
         return login_res["status"]["code"] == "ok"
 
-    def lims_login(self, loginID, password, create_session):
-        """
-        :param str loginID: Username
-        :param str password: Password
-        :returns dict: On the format:
+    # def lims_login(self, loginID, password, create_session):
+    #     """
+    #     :param str loginID: Username
+    #     :param str password: Password
+    #     :returns dict: On the format:
 
-        {'status': { 'code': 'ok', 'msg': msg },
-        'proposalList':[]
-        }
-        """
+    #     {'status': { 'code': 'ok', 'msg': msg },
+    #     'proposalList':[]
+    #     }
+    #     """
+    #     login_res = {}
+    #     # If this is used often, it could be moved to a better place.
+    #     ERROR_CODE = dict({"status": {"code": "0"}})
+
+    #     try:
+    #         HWR.beamline.lims.lims_rest.authenticate(loginID, password)
+    #     except Exception:
+    #         logging.getLogger("MX3.HWR").error("[LIMS-REST] Could not authenticate")
+    #         return ERROR_CODE
+
+    #     if HWR.beamline.lims.loginType.lower() == "user":
+    #         try:
+    #             connection_ok = HWR.beamline.lims.echo()
+    #             if not connection_ok:
+    #                 HWR.beamline.lims.init()
+    #         except Exception:
+    #             msg = "[LIMS] Connection Error!"
+    #             logging.getLogger("MX3.HWR").error(msg)
+    #             return ERROR_CODE
+
+    #         try:
+    #             proposals = HWR.beamline.lims.get_proposals_by_user(loginID)
+
+    #             logging.getLogger("MX3.HWR").info(
+    #                 "[LIMS] Retrieving proposal list for user: %s, proposals: %s"
+    #                 % (loginID, proposals)
+    #             )
+    #             session["proposal_list"] = copy.deepcopy(proposals)
+    #         except Exception:
+    #             logging.getLogger("MX3.HWR").error(
+    #                 "[LIMS] Could not retreive proposal list, %s" % sys.exc_info()[1]
+    #             )
+    #             return ERROR_CODE
+
+    #         for prop in session["proposal_list"]:
+    #             todays_session = HWR.beamline.lims.get_todays_session(prop)
+    #             prop["Session"] = [todays_session["session"]]
+
+    #         if hasattr(
+    #             HWR.beamline.session, "commissioning_fake_proposal"
+    #         ) and HWR.beamline.session.is_inhouse(loginID, None):
+    #             dummy = HWR.beamline.session.commissioning_fake_proposal
+    #             session["proposal_list"].append(dummy)
+
+    #         login_res["proposalList"] = session["proposal_list"]
+    #         login_res["status"] = {"code": "ok", "msg": "Successful login"}
+    #     else:
+    #         try:
+    #             login_res = HWR.beamline.lims.login(
+    #                 loginID, password, create_session=create_session
+    #             )
+    #             proposal = HWR.beamline.lims.get_proposal(
+    #                 login_res["Proposal"]["code"], login_res["Proposal"]["number"]
+    #             )
+
+    #         except Exception:
+    #             logging.getLogger("MX3.HWR").error("[LIMS] Could not login to LIMS")
+    #             return ERROR_CODE
+
+    #         session["proposal_list"] = [proposal]
+    #         login_res["proposalList"] = [proposal]
+
+    #     logging.getLogger("MX3.HWR").info(
+    #         "[LIMS] Logged in, proposal data: %s" % login_res
+    #     )
+
+    #     return login_res
+    #
+def lims_login(self, loginID, password, create_session):
         login_res = {}
-        # If this is used often, it could be moved to a better place.
-        ERROR_CODE = dict({"status": {"code": "0"}})
+     
+        ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
+
+        LDAP_HOST = '10.30.61.223'      # LDAP IP
+        LDAP_PORT = 3890
+        BASE_DN = 'dc=beamline,dc=local' # Base DN
+        
+        # 用户 DN (uid=zhangsan,ou=people,dc=beamline,dc=local)
+        user_dn = f"uid={loginID},ou=people,{BASE_DN}"
+
+        print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
 
         try:
-            HWR.beamline.lims.lims_rest.authenticate(loginID, password)
-        except Exception:
-            logging.getLogger("MX3.HWR").error("[LIMS-REST] Could not authenticate")
+            
+            server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
+            conn = ldap3.Connection(server, user=user_dn, password=password)
+            
+            # 尝试 Bind 通过密码验证
+            if not conn.bind():
+                logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误或用户不存在: {loginID}")
+                return ERROR_CODE
+            
+           
+            conn.unbind()
+            logging.getLogger("MX3.HWR").info(f"[LDAP] 用户 {loginID} 验证成功！")
+            
+        except Exception as e:
+            logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
             return ERROR_CODE
 
-        if HWR.beamline.lims.loginType.lower() == "user":
-            try:
-                connection_ok = HWR.beamline.lims.echo()
-                if not connection_ok:
-                    HWR.beamline.lims.init()
-            except Exception:
-                msg = "[LIMS] Connection Error!"
-                logging.getLogger("MX3.HWR").error(msg)
-                return ERROR_CODE
-
-            try:
-                proposals = HWR.beamline.lims.get_proposals_by_user(loginID)
-
-                logging.getLogger("MX3.HWR").info(
-                    "[LIMS] Retrieving proposal list for user: %s, proposals: %s"
-                    % (loginID, proposals)
-                )
-                session["proposal_list"] = copy.deepcopy(proposals)
-            except Exception:
-                logging.getLogger("MX3.HWR").error(
-                    "[LIMS] Could not retreive proposal list, %s" % sys.exc_info()[1]
-                )
-                return ERROR_CODE
-
-            for prop in session["proposal_list"]:
-                todays_session = HWR.beamline.lims.get_todays_session(prop)
-                prop["Session"] = [todays_session["session"]]
-
-            if hasattr(
-                HWR.beamline.session, "commissioning_fake_proposal"
-            ) and HWR.beamline.session.is_inhouse(loginID, None):
-                dummy = HWR.beamline.session.commissioning_fake_proposal
-                session["proposal_list"].append(dummy)
-
-            login_res["proposalList"] = session["proposal_list"]
-            login_res["status"] = {"code": "ok", "msg": "Successful login"}
-        else:
-            try:
-                login_res = HWR.beamline.lims.login(
-                    loginID, password, create_session=create_session
-                )
-                proposal = HWR.beamline.lims.get_proposal(
-                    login_res["Proposal"]["code"], login_res["Proposal"]["number"]
-                )
-
-            except Exception:
-                logging.getLogger("MX3.HWR").error("[LIMS] Could not login to LIMS")
-                return ERROR_CODE
-
-            session["proposal_list"] = [proposal]
-            login_res["proposalList"] = [proposal]
-
+        fake_proposal = {
+            "Proposal": {
+                "code": "mx",         # 课题代码
+                "number": "2026",     # 课题编号
+                "proposalId": 99999,  # 内部 ID
+                "title": "LDAP Bypass Session",
+                "type": "MX"
+            },
+            "Person": {
+                "familyName": loginID, 
+                "givenName": "User",
+                "email": f"{loginID}@beamline.local"
+            },
+          
+            "Session": [{
+                "sessionId": 12345,
+                "beamlineName": "TestBeamline",
+                "startDate": "2026-01-01 00:00:00",
+                "endDate": "2026-12-31 23:59:59"
+            }]
+        }
+      
+        login_res["proposalList"] = [fake_proposal]
+        
+        login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
+        
         logging.getLogger("MX3.HWR").info(
-            "[LIMS] Logged in, proposal data: %s" % login_res
+            "[LIMS] Logged in (Bypassed), proposal data: %s" % login_res
         )
 
         return login_res
