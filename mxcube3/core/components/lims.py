@@ -264,7 +264,8 @@ class Lims(ComponentBase):
     #     return login_res
     #
     def lims_login(self, loginID, password, create_session):
-        # 1. 引入 HWR 用于获取真实线站名
+        from flask import session
+        import ldap3
         from mxcubecore import HardwareRepository as HWR
         
         login_res = {}
@@ -273,41 +274,52 @@ class Lims(ComponentBase):
         LDAP_HOST = '10.30.61.223'
         LDAP_PORT = 3890
         BASE_DN = 'dc=beamline,dc=local'
-        
         user_dn = f"uid={loginID},ou=people,{BASE_DN}"
+
         print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
 
         try:
             server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
             conn = ldap3.Connection(server, user=user_dn, password=password)
-            
             if not conn.bind():
                 logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
                 return ERROR_CODE
-            
             conn.unbind()
-            logging.getLogger("MX3.HWR").info(f"[LDAP] 用户 {loginID} 验证成功！")
-            
         except Exception as e:
             logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
             return ERROR_CODE
 
-        # 2. 【新增】动态获取当前配置的线站名称
+        # 动态获取线站名
         try:
             bl_name = HWR.beamline.session.beamline_name
         except:
-            bl_name = "BL19U1" # 兜底默认值
+            bl_name = "BL19U1"
 
-        # 3. 【新增】简单处理 idtest0 的 code 和 number
         prop_code = loginID.rstrip('0123456789') if loginID[-1].isdigit() else "mx"
         prop_number = loginID[len(prop_code):] if loginID[-1].isdigit() else "2026"
+
+        # === 【核心修改：构造双重兼容的 Session】===
+        
+        # 1. 先定义核心数据
+        core_session_data = {
+            "sessionId": 12345,
+            "beamlineName": bl_name,  # get_todays_session 需要这个在第一层
+            "startDate": "2024-01-01 00:00:00",
+            "endDate": "2030-12-31 23:59:59",
+            "proposalId": 99999
+        }
+
+        # 2. 构造一个既有扁平数据，又有嵌套数据的字典
+        # 为了防止 json 序列化循环引用报错，我们使用 copy
+        mixed_session = core_session_data.copy() 
+        mixed_session["session"] = core_session_data # 这一句是为了骗过 create_lims_session
 
         fake_proposal = {
             "Proposal": {
                 "code": prop_code,
                 "number": prop_number,
                 "proposalId": 99999,
-                "title": "Commissioning", # <--- 【修改】改成 Commissioning 以获取权限
+                "title": "Commissioning", 
                 "type": "MX"
             },
             "Person": {
@@ -315,26 +327,16 @@ class Lims(ComponentBase):
                 "givenName": "User",
                 "email": f"{loginID}@beamline.local"
             },
-            "Session": [{
-                # <--- 【修改】这里多包一层 "session"，这是前端不报错的关键
-                "session": { 
-                    "sessionId": 12345,
-                    "beamlineName": bl_name, # <--- 【修改】使用动态获取的名字
-                    "startDate": "2024-01-01 00:00:00",
-                    "endDate": "2030-12-31 23:59:59",
-                    "proposalId": 99999
-                }
-            }]
+            "Session": [mixed_session] # 放进去这个混合体
         }
-        
+
+        # 后续处理保持不变
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
-        
-        # 这一句最重要，把 Proposal 提到最外层
         login_res.update(fake_proposal)
         
-        # 这句其实 update 已经做了，但留着也不报错
-        login_res["Session"] = fake_proposal["Session"] 
+        # 为了兼容性，保留这一行也无妨
+        login_res["Session"] = fake_proposal["Session"]
         
         login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
         
