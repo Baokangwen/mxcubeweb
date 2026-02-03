@@ -263,7 +263,7 @@ class Lims(ComponentBase):
 
     #     return login_res
     #
-def lims_login(self, loginID, password, create_session):
+    def lims_login(self, loginID, password, create_session):
         login_res = {}
      
         ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
