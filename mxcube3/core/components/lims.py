@@ -265,11 +265,8 @@ class Lims(ComponentBase):
     #
     def lims_login(self, loginID, password, create_session):
         """
-        [远程测试专用版]
-        特点：
-        1. 移除所有 IP/HWR inhouse 检查，方便在非线站网络下测试。
-        2. 保留 LDAP 功能。
-        3. 对 idtest0 实行无条件放行（后门）。
+        [双模式共存版]
+        逻辑：优先尝试 LDAP。如果 LDAP 失败，但账号是 idtest0，则启用“后门”模式直接允许。
         """
         from flask import session
         import ldap3
@@ -283,7 +280,7 @@ class Lims(ComponentBase):
         auth_method = "None"
 
         # ==========================================
-        # 1. 尝试 LDAP 验证 (常规流程)
+        # 1. 尝试 LDAP 验证 (优先)
         # ==========================================
         LDAP_HOST = '10.30.61.223'
         LDAP_PORT = 3890
@@ -291,30 +288,32 @@ class Lims(ComponentBase):
         user_dn = f"uid={loginID},ou=people,{BASE_DN}"
 
         try:
-            # print(f"[DEBUG] 尝试 LDAP: {user_dn}")
+            print(f"[DEBUG] 尝试 LDAP 验证: {user_dn}")
             server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
             conn = ldap3.Connection(server, user=user_dn, password=password)
             if conn.bind():
                 auth_success = True
                 auth_method = "LDAP"
                 conn.unbind()
-        except Exception:
-            pass 
+            else:
+                logging.getLogger("MX3.HWR").warning(f"[LDAP] 验证失败: {loginID}")
+        except Exception as e:
+            logging.getLogger("MX3.HWR").error(f"[LDAP] 连接错误: {str(e)}")
 
         # ==========================================
-        # 2. 远程测试白名单 (替代原版 is_inhouse)
+        # 2. 尝试 本地白名单验证 (后备/旧版兼容)
         # ==========================================
         if not auth_success:
-            # 在这里写死你想要放行的账号
-            # 不再检查 IP，不再检查 HWR 配置，只要名字对就放行
-            FORCE_ALLOW_LIST = ["idtest0", "op", "setup", "mxcube"]
+            # 在这里定义你的旧版账号列表，支持任意密码登录
+            # 如果你有多个账号需要保留旧习惯，都加到列表里
+            local_whitelist = ["idtest0", "op", "user"] 
             
-            if loginID in FORCE_ALLOW_LIST:
-                print(f"[DEBUG] 远程模式: 账号 {loginID} 在白名单中，强制放行")
+            if loginID in local_whitelist:
+                print(f"[DEBUG] 检测到本地白名单用户 {loginID}，启用免密登录")
                 auth_success = True
-                auth_method = "RemoteWhitelist"
+                auth_method = "Local/Legacy"
             else:
-                print(f"[DEBUG] 验证失败: {loginID}")
+                print(f"[DEBUG] 用户 {loginID} LDAP失败且不在白名单中")
 
         # ==========================================
         # 3. 最终判定
@@ -323,7 +322,7 @@ class Lims(ComponentBase):
             return ERROR_CODE
 
         # ==========================================
-        # 4. 构造数据 (混合结构，保证不报错)
+        # 4. 构造数据 (使用之前的完美结构)
         # ==========================================
         
         # 获取线站名
@@ -332,7 +331,9 @@ class Lims(ComponentBase):
         except:
             bl_name = "BL19U1"
 
-        # 智能拆分 Code/Number (确保路径正确)
+        # 智能拆分 Code 和 Number
+        # 逻辑：如果是 idtest0，强制拆成 idtest + 0 (为了匹配文件路径)
+        # 如果是 LDAP 账号，尝试自动拆分
         if loginID == "idtest0":
             prop_code = "idtest"
             prop_number = "0"
@@ -343,7 +344,7 @@ class Lims(ComponentBase):
             prop_code = loginID
             prop_number = "1001"
 
-        # 构造 Session (双兼容结构)
+        # 构造混合 Session 结构
         core_session_data = {
             "sessionId": 1,
             "beamlineName": bl_name,
@@ -354,19 +355,18 @@ class Lims(ComponentBase):
         mixed_session = core_session_data.copy()
         mixed_session["session"] = core_session_data
 
-        # 权限 Title 设置
-        # 既然是远程测试，我们假设 idtest0 就是操作员
+        # 构造 Proposal
+        # 这里的 Title 决定了权限，保留 Commissioning 或者是 operator
+        user_title = "Commissioning" if loginID == "idtest0" else "Standard User"
         if loginID == "idtest0":
-            user_title = "operator on IDTESTeh1" # 模仿最高权限
-        else:
-            user_title = "Standard User"
+             user_title = "operator on IDTESTeh1" # 模仿旧版 Title
 
         fake_proposal = {
             "Proposal": {
                 "code": prop_code,       
                 "number": prop_number,   
                 "proposalId": 1,
-                "title": user_title,     
+                "title": user_title,
                 "type": "MX"
             },
             "Person": {
@@ -377,19 +377,15 @@ class Lims(ComponentBase):
             "Session": [mixed_session]
         }
 
-        # ==========================================
-        # 5. 填充返回
-        # ==========================================
+        # 填充返回
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
-        
-        # 核心：提升到最外层
         login_res.update(fake_proposal)
         
         login_res["status"] = {"code": "ok", "msg": f"Success via {auth_method}"}
         
         logging.getLogger("MX3.HWR").info(
-            f"[LIMS] 远程登录成功: {loginID} ({auth_method})"
+            f"[LIMS] 用户 {loginID} 登录成功 (方式: {auth_method})"
         )
 
         return login_res
