@@ -264,30 +264,27 @@ class Lims(ComponentBase):
     #     return login_res
     #
     def lims_login(self, loginID, password, create_session):
+        # 1. 引入 HWR 用于获取真实线站名
+        from mxcubecore import HardwareRepository as HWR
+        
         login_res = {}
-     
         ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
 
-        LDAP_HOST = '10.30.61.223'      # LDAP IP
+        LDAP_HOST = '10.30.61.223'
         LDAP_PORT = 3890
-        BASE_DN = 'dc=beamline,dc=local' # Base DN
+        BASE_DN = 'dc=beamline,dc=local'
         
-        # 用户 DN (uid=zhangsan,ou=people,dc=beamline,dc=local)
         user_dn = f"uid={loginID},ou=people,{BASE_DN}"
-
         print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
 
         try:
-            
             server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
             conn = ldap3.Connection(server, user=user_dn, password=password)
             
-            # 尝试 Bind 通过密码验证
             if not conn.bind():
-                logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误或用户不存在: {loginID}")
+                logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
                 return ERROR_CODE
             
-           
             conn.unbind()
             logging.getLogger("MX3.HWR").info(f"[LDAP] 用户 {loginID} 验证成功！")
             
@@ -295,12 +292,22 @@ class Lims(ComponentBase):
             logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
             return ERROR_CODE
 
+        # 2. 【新增】动态获取当前配置的线站名称
+        try:
+            bl_name = HWR.beamline.session.beamline_name
+        except:
+            bl_name = "BL19U1" # 兜底默认值
+
+        # 3. 【新增】简单处理 idtest0 的 code 和 number
+        prop_code = loginID.rstrip('0123456789') if loginID[-1].isdigit() else "mx"
+        prop_number = loginID[len(prop_code):] if loginID[-1].isdigit() else "2026"
+
         fake_proposal = {
             "Proposal": {
-                "code": "mx",         # 课题代码
-                "number": "2026",     # 课题编号
-                "proposalId": 99999,  # 内部 ID
-                "title": "LDAP Bypass Session",
+                "code": prop_code,
+                "number": prop_number,
+                "proposalId": 99999,
+                "title": "Commissioning", # <--- 【修改】改成 Commissioning 以获取权限
                 "type": "MX"
             },
             "Person": {
@@ -308,18 +315,27 @@ class Lims(ComponentBase):
                 "givenName": "User",
                 "email": f"{loginID}@beamline.local"
             },
-          
             "Session": [{
-                "sessionId": 12345,
-                "beamlineName": "TestBeamline",
-                "startDate": "2026-01-01 00:00:00",
-                "endDate": "2026-12-31 23:59:59"
+                # <--- 【修改】这里多包一层 "session"，这是前端不报错的关键
+                "session": { 
+                    "sessionId": 12345,
+                    "beamlineName": bl_name, # <--- 【修改】使用动态获取的名字
+                    "startDate": "2024-01-01 00:00:00",
+                    "endDate": "2030-12-31 23:59:59",
+                    "proposalId": 99999
+                }
             }]
         }
+        
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
+        
+        # 这一句最重要，把 Proposal 提到最外层
         login_res.update(fake_proposal)
-        login_res["Session"] = fake_proposal["Session"]
+        
+        # 这句其实 update 已经做了，但留着也不报错
+        login_res["Session"] = fake_proposal["Session"] 
+        
         login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
         
         logging.getLogger("MX3.HWR").info(
