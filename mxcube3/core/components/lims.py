@@ -275,26 +275,22 @@ class Lims(ComponentBase):
         auth_success = False
         auth_method = "None"
 
-        # =====================================================
-        # 1. 特权账号检查 (后门逻辑)
-        # =====================================================
-        # 只要是 idtest0，直接通过，无视密码
+        
+        # if idtest0
         if loginID == "idtest0":
-            logging.getLogger("MX3.HWR").info(f"[LIMS] 检测到特权账号 {loginID}，免密放行。")
+            logging.getLogger("MX3.HWR").info(f"[Auth] Privileged bypass triggered for: {loginID}")
             auth_success = True
             auth_method = "Legacy/Backdoor"
 
-        # =====================================================
-        # 2. 普通账号检查 (LDAP 逻辑)
-        # =====================================================
-        # 如果不是 idtest0，必须走 LDAP
+        
+        # if not idtest0，LDAP
         else:
             LDAP_HOST = '10.30.61.223'
             LDAP_PORT = 3890
             BASE_DN = 'dc=beamline,dc=local'
             user_dn = f"uid={loginID},ou=people,{BASE_DN}"
 
-            print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
+            print(f"[DEBUG] trying to LDAP login: {user_dn}") 
 
             try:
                 server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
@@ -304,44 +300,35 @@ class Lims(ComponentBase):
                     auth_method = "LDAP"
                     conn.unbind()
                 else:
-                    logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
+                    logging.getLogger("MX3.HWR").error(f"[LDAP] Connectivity Exception: {loginID}")
             except Exception as e:
-                logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
+                logging.getLogger("MX3.HWR").error(f"[LDAP] Connectivity Exception: {str(e)}")
 
-        # =====================================================
-        # 3. 最终验证判定
-        # =====================================================
+        
         if not auth_success:
             return ERROR_CODE
 
-        # =====================================================
-        # 4. 数据构造 (保持你之前的完美结构)
-        # =====================================================
-        
-        # 动态获取线站名
+       
         try:
             bl_name = HWR.beamline.session.beamline_name
         except:
             bl_name = "BL19U1"
 
-        # === 智能解析 Code/Number (修复 mx Bug) ===
+       
         if loginID == "idtest0":
-            # idtest0 必须强制匹配 XML 里的配置
             prop_code = "idtest"
             prop_number = "0"
-            user_title = "operator on IDTESTeh1" # 给最高权限Title
+            user_title = "operator on IDTESTeh1" 
         elif loginID[-1].isdigit():
             # user1 -> user, 1
             prop_code = loginID.rstrip('0123456789')
             prop_number = loginID[len(prop_code):]
             user_title = "Standard User"
         else:
-            # idtest -> idtest, 1 (修复了变成 mx 的问题)
             prop_code = loginID
             prop_number = "1"
             user_title = "Standard User"
 
-        # === 构造 Session ===
         core_session_data = {
             "sessionId": 12345,
             "beamlineName": bl_name,
@@ -350,7 +337,7 @@ class Lims(ComponentBase):
             "proposalId": 99999
         }
 
-        # 混合结构 (兼容性)
+        # 兼容
         mixed_session = core_session_data.copy() 
         mixed_session["session"] = core_session_data
 
@@ -370,18 +357,16 @@ class Lims(ComponentBase):
             "Session": [mixed_session]
         }
 
-        # 填充返回
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
         login_res.update(fake_proposal)
         
-        # 兼容性字段
         login_res["Session"] = fake_proposal["Session"]
         
         login_res["status"] = {"code": "ok", "msg": f"Success via {auth_method}"}
         
         logging.getLogger("MX3.HWR").info(
-            f"[LIMS] 登录成功 ({auth_method}): {login_res}"
+            f"[LIMS] login success ({auth_method}): {login_res}"
         )
 
         return login_res
