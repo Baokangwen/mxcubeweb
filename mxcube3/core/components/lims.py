@@ -264,21 +264,26 @@ class Lims(ComponentBase):
     #     return login_res
     #
     def lims_login(self, loginID, password, create_session):
+        """
+        [远程测试专用版]
+        特点：
+        1. 移除所有 IP/HWR inhouse 检查，方便在非线站网络下测试。
+        2. 保留 LDAP 功能。
+        3. 对 idtest0 实行无条件放行（后门）。
+        """
         from flask import session
         import ldap3
-        import copy # 引入 copy，因为我们要复制原生配置
         from mxcubecore import HardwareRepository as HWR
         
         login_res = {}
         ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
         
-        # 标记位
+        # 标记是否验证成功
         auth_success = False
         auth_method = "None"
-        is_inhouse_user = False
 
         # ==========================================
-        # 1. 尝试 LDAP 验证 (新功能)
+        # 1. 尝试 LDAP 验证 (常规流程)
         # ==========================================
         LDAP_HOST = '10.30.61.223'
         LDAP_PORT = 3890
@@ -286,7 +291,7 @@ class Lims(ComponentBase):
         user_dn = f"uid={loginID},ou=people,{BASE_DN}"
 
         try:
-            # print(f"[DEBUG] 尝试 LDAP 验证: {user_dn}")
+            # print(f"[DEBUG] 尝试 LDAP: {user_dn}")
             server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
             conn = ldap3.Connection(server, user=user_dn, password=password)
             if conn.bind():
@@ -294,23 +299,22 @@ class Lims(ComponentBase):
                 auth_method = "LDAP"
                 conn.unbind()
         except Exception:
-            pass # LDAP 失败不报错，继续往下走
+            pass 
 
         # ==========================================
-        # 2. 尝试 原生 In-house 验证 (复刻源代码)
+        # 2. 远程测试白名单 (替代原版 is_inhouse)
         # ==========================================
         if not auth_success:
-            # 【这里复刻了源代码的逻辑！】
-            # 直接调用 HWR 去查 XML 配置文件里的白名单
-            if hasattr(HWR.beamline.session, "is_inhouse") and \
-               HWR.beamline.session.is_inhouse(loginID, None):
-                
-                print(f"[DEBUG] 原生检测: 用户 {loginID} 在 inhouse_users 列表中")
+            # 在这里写死你想要放行的账号
+            # 不再检查 IP，不再检查 HWR 配置，只要名字对就放行
+            FORCE_ALLOW_LIST = ["idtest0", "op", "setup", "mxcube"]
+            
+            if loginID in FORCE_ALLOW_LIST:
+                print(f"[DEBUG] 远程模式: 账号 {loginID} 在白名单中，强制放行")
                 auth_success = True
-                is_inhouse_user = True
-                auth_method = "In-house(XML)"
+                auth_method = "RemoteWhitelist"
             else:
-                print(f"[DEBUG] 用户 {loginID} 既不是LDAP用户也不是In-house用户")
+                print(f"[DEBUG] 验证失败: {loginID}")
 
         # ==========================================
         # 3. 最终判定
@@ -319,99 +323,73 @@ class Lims(ComponentBase):
             return ERROR_CODE
 
         # ==========================================
-        # 4. 构造数据 (智能混合模式)
+        # 4. 构造数据 (混合结构，保证不报错)
         # ==========================================
-        final_proposal = None
+        
+        # 获取线站名
+        try:
+            bl_name = HWR.beamline.session.beamline_name
+        except:
+            bl_name = "BL19U1"
 
-        # A. 如果是 In-house 用户，尝试直接用原生配置 (复刻源代码逻辑)
-        if is_inhouse_user and hasattr(HWR.beamline.session, "commissioning_fake_proposal"):
-            try:
-                # 获取原生配置对象
-                dummy = HWR.beamline.session.commissioning_fake_proposal
-                # 深拷贝一份，防止修改原对象
-                final_proposal = copy.deepcopy(dummy)
-                logging.getLogger("MX3.HWR").info("[LIMS] 使用原生 XML 配置数据")
-                
-                # 【补丁修复】原生配置可能缺少前端需要的嵌套结构，这里检查并修补
-                # 确保 Session 列表里有嵌套的 session key
-                if "Session" in final_proposal and len(final_proposal["Session"]) > 0:
-                    sess = final_proposal["Session"][0]
-                    if "session" not in sess:
-                        # 如果没有嵌套，手动包一层，防止 create_lims_session 报错
-                        sess["session"] = copy.deepcopy(sess)
-                        # 确保有 beamlineName，防止 get_todays_session 报错
-                        try:
-                            bl_name = HWR.beamline.session.beamline_name
-                        except:
-                            bl_name = "BL19U1"
-                        sess["beamlineName"] = bl_name
-                        
-            except Exception as e:
-                logging.getLogger("MX3.HWR").error(f"[LIMS] 读取原生配置失败: {e}, 转为手动构造")
-                final_proposal = None
+        # 智能拆分 Code/Number (确保路径正确)
+        if loginID == "idtest0":
+            prop_code = "idtest"
+            prop_number = "0"
+        elif loginID[-1].isdigit():
+            prop_code = loginID.rstrip('0123456789')
+            prop_number = loginID[len(prop_code):]
+        else:
+            prop_code = loginID
+            prop_number = "1001"
 
-        # B. 如果是 LDAP 用户，或者原生配置读取失败，使用我们的“完美构造法”
-        if final_proposal is None:
-            # 获取线站名
-            try:
-                bl_name = HWR.beamline.session.beamline_name
-            except:
-                bl_name = "BL19U1"
+        # 构造 Session (双兼容结构)
+        core_session_data = {
+            "sessionId": 1,
+            "beamlineName": bl_name,
+            "proposalId": 1,
+            "startDate": "2020-01-01 00:00:00",
+            "endDate": "2030-12-31 23:59:59"
+        }
+        mixed_session = core_session_data.copy()
+        mixed_session["session"] = core_session_data
 
-            # 拆分 Code/Number
-            if loginID == "idtest0":
-                prop_code = "idtest"
-                prop_number = "0"
-            elif loginID[-1].isdigit():
-                prop_code = loginID.rstrip('0123456789')
-                prop_number = loginID[len(prop_code):]
-            else:
-                prop_code = loginID
-                prop_number = "1001"
+        # 权限 Title 设置
+        # 既然是远程测试，我们假设 idtest0 就是操作员
+        if loginID == "idtest0":
+            user_title = "operator on IDTESTeh1" # 模仿最高权限
+        else:
+            user_title = "Standard User"
 
-            # Title 逻辑
-            user_title = "operator on IDTESTeh1" if is_inhouse_user else "Standard User"
-
-            # 构造 Session
-            core_session_data = {
-                "sessionId": 1,
-                "beamlineName": bl_name,
+        fake_proposal = {
+            "Proposal": {
+                "code": prop_code,       
+                "number": prop_number,   
                 "proposalId": 1,
-                "startDate": "2020-01-01 00:00:00",
-                "endDate": "2030-12-31 23:59:59"
-            }
-            mixed_session = core_session_data.copy()
-            mixed_session["session"] = core_session_data
-
-            final_proposal = {
-                "Proposal": {
-                    "code": prop_code,       
-                    "number": prop_number,   
-                    "proposalId": 1,
-                    "title": user_title,
-                    "type": "MX"
-                },
-                "Person": {
-                    "familyName": user_title, 
-                    "givenName": loginID,
-                    "email": None
-                },
-                "Session": [mixed_session]
-            }
+                "title": user_title,     
+                "type": "MX"
+            },
+            "Person": {
+                "familyName": user_title, 
+                "givenName": loginID,
+                "email": None
+            },
+            "Session": [mixed_session]
+        }
 
         # ==========================================
-        # 5. 填充返回 (保持完美结构)
+        # 5. 填充返回
         # ==========================================
-        session["proposal_list"] = [final_proposal]
-        login_res["proposalList"] = [final_proposal]
+        session["proposal_list"] = [fake_proposal]
+        login_res["proposalList"] = [fake_proposal]
         
         # 核心：提升到最外层
-        login_res.update(final_proposal)
+        login_res.update(fake_proposal)
         
         login_res["status"] = {"code": "ok", "msg": f"Success via {auth_method}"}
         
         logging.getLogger("MX3.HWR").info(
-            f"[LIMS] 登录成功: {loginID} ({auth_method})"
+            f"[LIMS] 远程登录成功: {loginID} ({auth_method})"
         )
 
         return login_res
