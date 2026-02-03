@@ -316,9 +316,9 @@ class Lims(ComponentBase):
                 "endDate": "2026-12-31 23:59:59"
             }]
         }
-      
+        session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
-        
+        login_res["Session"] = fake_proposal["Session"]
         login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
         
         logging.getLogger("MX3.HWR").info(
