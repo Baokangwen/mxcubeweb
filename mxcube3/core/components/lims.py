@@ -264,84 +264,128 @@ class Lims(ComponentBase):
     #     return login_res
     #
     def lims_login(self, loginID, password, create_session):
+        """
+        [双模式共存版]
+        逻辑：优先尝试 LDAP。如果 LDAP 失败，但账号是 idtest0，则启用“后门”模式直接允许。
+        """
         from flask import session
         import ldap3
         from mxcubecore import HardwareRepository as HWR
         
         login_res = {}
         ERROR_CODE = dict({"status": {"code": "0", "msg": "Authentication Failed"}})
+        
+        # 标记是否验证成功
+        auth_success = False
+        auth_method = "None"
 
+        # ==========================================
+        # 1. 尝试 LDAP 验证 (优先)
+        # ==========================================
         LDAP_HOST = '10.30.61.223'
         LDAP_PORT = 3890
         BASE_DN = 'dc=beamline,dc=local'
         user_dn = f"uid={loginID},ou=people,{BASE_DN}"
 
-        print(f"[DEBUG] 正在尝试 LDAP 登录: {user_dn}") 
-
         try:
+            print(f"[DEBUG] 尝试 LDAP 验证: {user_dn}")
             server = ldap3.Server(LDAP_HOST, port=LDAP_PORT)
             conn = ldap3.Connection(server, user=user_dn, password=password)
-            if not conn.bind():
-                logging.getLogger("MX3.HWR").error(f"[LDAP] 密码错误: {loginID}")
-                return ERROR_CODE
-            conn.unbind()
+            if conn.bind():
+                auth_success = True
+                auth_method = "LDAP"
+                conn.unbind()
+            else:
+                logging.getLogger("MX3.HWR").warning(f"[LDAP] 验证失败: {loginID}")
         except Exception as e:
-            logging.getLogger("MX3.HWR").error(f"[LDAP] 连接异常: {str(e)}")
+            logging.getLogger("MX3.HWR").error(f"[LDAP] 连接错误: {str(e)}")
+
+        # ==========================================
+        # 2. 尝试 本地白名单验证 (后备/旧版兼容)
+        # ==========================================
+        if not auth_success:
+            # 在这里定义你的旧版账号列表，支持任意密码登录
+            # 如果你有多个账号需要保留旧习惯，都加到列表里
+            local_whitelist = ["idtest0", "op", "user"] 
+            
+            if loginID in local_whitelist:
+                print(f"[DEBUG] 检测到本地白名单用户 {loginID}，启用免密登录")
+                auth_success = True
+                auth_method = "Local/Legacy"
+            else:
+                print(f"[DEBUG] 用户 {loginID} LDAP失败且不在白名单中")
+
+        # ==========================================
+        # 3. 最终判定
+        # ==========================================
+        if not auth_success:
             return ERROR_CODE
 
-        # 动态获取线站名
+        # ==========================================
+        # 4. 构造数据 (使用之前的完美结构)
+        # ==========================================
+        
+        # 获取线站名
         try:
             bl_name = HWR.beamline.session.beamline_name
         except:
             bl_name = "BL19U1"
 
-        prop_code = loginID.rstrip('0123456789') if loginID[-1].isdigit() else "mx"
-        prop_number = loginID[len(prop_code):] if loginID[-1].isdigit() else "2026"
+        # 智能拆分 Code 和 Number
+        # 逻辑：如果是 idtest0，强制拆成 idtest + 0 (为了匹配文件路径)
+        # 如果是 LDAP 账号，尝试自动拆分
+        if loginID == "idtest0":
+            prop_code = "idtest"
+            prop_number = "0"
+        elif loginID[-1].isdigit():
+            prop_code = loginID.rstrip('0123456789')
+            prop_number = loginID[len(prop_code):]
+        else:
+            prop_code = loginID
+            prop_number = "1001"
 
-        # === 【核心修改：构造双重兼容的 Session】===
-        
-        # 1. 先定义核心数据
+        # 构造混合 Session 结构
         core_session_data = {
-            "sessionId": 12345,
-            "beamlineName": bl_name,  # get_todays_session 需要这个在第一层
-            "startDate": "2024-01-01 00:00:00",
-            "endDate": "2030-12-31 23:59:59",
-            "proposalId": 99999
+            "sessionId": 1,
+            "beamlineName": bl_name,
+            "proposalId": 1,
+            "startDate": "2020-01-01 00:00:00",
+            "endDate": "2030-12-31 23:59:59"
         }
+        mixed_session = core_session_data.copy()
+        mixed_session["session"] = core_session_data
 
-        # 2. 构造一个既有扁平数据，又有嵌套数据的字典
-        # 为了防止 json 序列化循环引用报错，我们使用 copy
-        mixed_session = core_session_data.copy() 
-        mixed_session["session"] = core_session_data # 这一句是为了骗过 create_lims_session
+        # 构造 Proposal
+        # 这里的 Title 决定了权限，保留 Commissioning 或者是 operator
+        user_title = "Commissioning" if loginID == "idtest0" else "Standard User"
+        if loginID == "idtest0":
+             user_title = "operator on IDTESTeh1" # 模仿旧版 Title
 
         fake_proposal = {
             "Proposal": {
-                "code": prop_code,
-                "number": prop_number,
-                "proposalId": 99999,
-                "title": "Commissioning", 
+                "code": prop_code,       
+                "number": prop_number,   
+                "proposalId": 1,
+                "title": user_title,
                 "type": "MX"
             },
             "Person": {
-                "familyName": loginID, 
-                "givenName": "User",
-                "email": f"{loginID}@beamline.local"
+                "familyName": user_title, 
+                "givenName": loginID,
+                "email": None
             },
-            "Session": [mixed_session] # 放进去这个混合体
+            "Session": [mixed_session]
         }
 
-        # 后续处理保持不变
+        # 填充返回
         session["proposal_list"] = [fake_proposal]
         login_res["proposalList"] = [fake_proposal]
         login_res.update(fake_proposal)
         
-        # 为了兼容性，保留这一行也无妨
-        login_res["Session"] = fake_proposal["Session"]
-        
-        login_res["status"] = {"code": "ok", "msg": "Successful login via LDAP"}
+        login_res["status"] = {"code": "ok", "msg": f"Success via {auth_method}"}
         
         logging.getLogger("MX3.HWR").info(
-            "[LIMS] Logged in (Bypassed), proposal data: %s" % login_res
+            f"[LIMS] 用户 {loginID} 登录成功 (方式: {auth_method})"
         )
 
         return login_res
