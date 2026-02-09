@@ -14,6 +14,106 @@
   </proposals>
 
   <inhouse_users>
+    <proposal><code>opid</code><number>1</number></proposal>
+    <proposal><code>opid</code><number>2</number></proposal>
+    <proposal><code>opid</code><number>3</number></proposal>
+    <proposal><code>opid</code><number>4</number></proposal>
+    <proposal><code>opid</code><number>5</number></proposal>
+    <proposal><code>opid</code><number>6</number></proposal>
+    <proposal><code>opid</code><number>7</number></proposal>
+    <proposal><code>opid</code><number>8</number></proposal>
+    <proposal><code>opid</code><number>9</number></proposal>
+    <proposal><code>opid</code><number>10</number></proposal>
+    <proposal><code>opid</code><number>11</number></proposal>
+    <proposal><code>opid</code><number>12</number></proposal>
+    <proposal><code>opid</code><number>13</number></proposal>
+    <proposal><code>opid</code><number>14</number></proposal>
+    <proposal><code>opid</code><number>15</number></proposal>
+    <proposal><code>opid</code><number>16</number></proposal>
+    <proposal><code>opid</code><number>17</number></proposal>
+    <proposal><code>opid</code><number>18</number></proposal>
+    <proposal><code>opid</code><number>19</number></proposal>
+    <proposal><code>opid</code><number>20</number></proposal>
+    <proposal><code>opid</code><number>21</number></proposal>
+    <proposal><code>opid</code><number>22</number></proposal>
+    <proposal><code>opid</code><number>23</number></proposal>
+    <proposal><code>opid</code><number>24</number></proposal>
+    <proposal><code>opid</code><number>25</number></proposal>
+    <proposal><code>opid</code><number>26</number></proposal>
+    <proposal><code>opid</code><number>27</number></proposal>
+    <proposal><code>opid</code><number>28</number></proposal>
+    <proposal><code>opid</code><number>29</number></proposal>
+    <proposal><code>opid</code><number>30</number></proposal>
+    <proposal><code>opid</code><number>31</number></proposal>
+    <proposal><code>opid</code><number>32</number></proposal>
+    <proposal><code>opid</code><number>33</number></proposal>
+    <proposal><code>opid</code><number>34</number></proposal>
+    <proposal><code>opid</code><number>35</number></proposal>
+    <proposal><code>opid</code><number>36</number></proposal>
+    <proposal><code>opid</code><number>37</number></proposal>
+    <proposal><code>opid</code><number>38</number></proposal>
+    <proposal><code>opid</code><number>39</number></proposal>
+    <proposal><code>opid</code><number>40</number></proposal>
+    <proposal><code>opid</code><number>41</number></proposal>
+    <proposal><code>opid</code><number>42</number></proposal>
+    <proposal><code>opid</code><number>43</number></proposal>
+    <proposal><code>opid</code><number>44</number></proposal>
+    <proposal><code>opid</code><number>45</number></proposal>
+    <proposal><code>opid</code><number>46</number></proposal>
+    <proposal><code>opid</code><number>47</number></proposal>
+    <proposal><code>opid</code><number>48</number></proposal>
+    <proposal><code>opid</code><number>49</number></proposal>
+    <proposal><code>opid</code><number>50</number></proposal>
+    <proposal><code>opid</code><number>51</number></proposal>
+    <proposal><code>opid</code><number>52</number></proposal>
+    <proposal><code>opid</code><number>53</number></proposal>
+    <proposal><code>opid</code><number>54</number></proposal>
+    <proposal><code>opid</code><number>55</number></proposal>
+    <proposal><code>opid</code><number>56</number></proposal>
+    <proposal><code>opid</code><number>57</number></proposal>
+    <proposal><code>opid</code><number>58</number></proposal>
+    <proposal><code>opid</code><number>59</number></proposal>
+    <proposal><code>opid</code><number>60</number></proposal>
+    <proposal><code>opid</code><number>61</number></proposal>
+    <proposal><code>opid</code><number>62</number></proposal>
+    <proposal><code>opid</code><number>63</number></proposal>
+    <proposal><code>opid</code><number>64</number></proposal>
+    <proposal><code>opid</code><number>65</number></proposal>
+    <proposal><code>opid</code><number>66</number></proposal>
+    <proposal><code>opid</code><number>67</number></proposal>
+    <proposal><code>opid</code><number>68</number></proposal>
+    <proposal><code>opid</code><number>69</number></proposal>
+    <proposal><code>opid</code><number>70</number></proposal>
+    <proposal><code>opid</code><number>71</number></proposal>
+    <proposal><code>opid</code><number>72</number></proposal>
+    <proposal><code>opid</code><number>73</number></proposal>
+    <proposal><code>opid</code><number>74</number></proposal>
+    <proposal><code>opid</code><number>75</number></proposal>
+    <proposal><code>opid</code><number>76</number></proposal>
+    <proposal><code>opid</code><number>77</number></proposal>
+    <proposal><code>opid</code><number>78</number></proposal>
+    <proposal><code>opid</code><number>79</number></proposal>
+    <proposal><code>opid</code><number>80</number></proposal>
+    <proposal><code>opid</code><number>81</number></proposal>
+    <proposal><code>opid</code><number>82</number></proposal>
+    <proposal><code>opid</code><number>83</number></proposal>
+    <proposal><code>opid</code><number>84</number></proposal>
+    <proposal><code>opid</code><number>85</number></proposal>
+    <proposal><code>opid</code><number>86</number></proposal>
+    <proposal><code>opid</code><number>87</number></proposal>
+    <proposal><code>opid</code><number>88</number></proposal>
+    <proposal><code>opid</code><number>89</number></proposal>
+    <proposal><code>opid</code><number>90</number></proposal>
+    <proposal><code>opid</code><number>91</number></proposal>
+    <proposal><code>opid</code><number>92</number></proposal>
+    <proposal><code>opid</code><number>93</number></proposal>
+    <proposal><code>opid</code><number>94</number></proposal>
+    <proposal><code>opid</code><number>95</number></proposal>
+    <proposal><code>opid</code><number>96</number></proposal>
+    <proposal><code>opid</code><number>97</number></proposal>
+    <proposal><code>opid</code><number>98</number></proposal>
+    <proposal><code>opid</code><number>99</number></proposal>
+    <proposal><code>opid</code><number>100</number></proposal>
     <proposal>
       <code>opid</code>
       <number>291</number>
@@ -42,6 +142,20 @@
       <code>mxihr</code>
       <number>6</number>
     </proposal>
+    <proposal><code>mxihr</code><number>7</number></proposal>
+    <proposal><code>mxihr</code><number>8</number></proposal>
+    <proposal><code>mxihr</code><number>9</number></proposal>
+    <proposal><code>mxihr</code><number>10</number></proposal>
+    <proposal><code>mxihr</code><number>11</number></proposal>
+    <proposal><code>mxihr</code><number>12</number></proposal>
+    <proposal><code>mxihr</code><number>13</number></proposal>
+    <proposal><code>mxihr</code><number>14</number></proposal>
+    <proposal><code>mxihr</code><number>15</number></proposal>
+    <proposal><code>mxihr</code><number>16</number></proposal>
+    <proposal><code>mxihr</code><number>17</number></proposal>
+    <proposal><code>mxihr</code><number>18</number></proposal>
+    <proposal><code>mxihr</code><number>19</number></proposal>
+    <proposal><code>mxihr</code><number>20</number></proposal>
   </inhouse_users>
 
   <file_info>
