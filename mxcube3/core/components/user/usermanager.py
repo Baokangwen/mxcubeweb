@@ -124,12 +124,13 @@ class BaseUserManager(ComponentBase):
                     self.app.lims.select_proposal(_u.selected_proposal)
 
     def is_inhouse_user(self, user_id):
-        user_id_list = [
-            "%s%s" % (code, number)
-            for (code, number) in HWR.beamline.session.in_house_users
-        ]
+        # user_id_list = [
+        #     "%s%s" % (code, number)
+        #     for (code, number) in HWR.beamline.session.in_house_users
+        # ]
 
-        return user_id in user_id_list
+        # return user_id in user_id_list
+        return True
 
     # Abstract method to be implemented by concrete implementation
     def _login(self, login_id, password):
@@ -354,7 +355,8 @@ class UserManager(BaseUserManager):
     def _login(self, login_id: str, password: str):
         login_res = self.app.lims.lims_login(login_id, password, create_session=False)
         inhouse = self.is_inhouse_user(login_id)
-
+        print(f"[DEBUG] 登录结果: {login_res}")
+        print(f"[DEBUG] 是否为内部用户: {inhouse}")
         info = {
             "valid": self.app.lims.lims_valid_login(login_res),
             "local": is_local_host(),
@@ -427,3 +429,12 @@ class UserManager(BaseUserManager):
 
     def _signout(self):
         pass
+    def user_logout(self):
+        user = current_user
+        user_datastore = self.app.server.user_datastore
+
+        _u = user_datastore.find_user(username=user.username)
+        _u.active = False
+        user_datastore.put(_u)
+
+        self.app.server.user_datastore.commit()

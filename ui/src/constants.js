@@ -3,7 +3,7 @@
 // are not used within the same file. So disable eslint for this
 // section
 
- 
+
 
 export const QUEUE_STARTED = 'QueueStarted';
 export const QUEUE_RUNNING = 'QueueRunning';
@@ -116,16 +116,28 @@ export const SPACE_GROUPS = [
   'I23',
   'I213',
   'I432',
-  'I4132',
+  'I4132'
 ];
 
 export const MOTOR_STATE = {
+  INITIALIZING: 'INITIALIZING',
+  ON:'ON',
   UNKNOWN: 'UNKNOWN',
   WARNING: 'WARNING',
   BUSY: 'BUSY',
   READY: 'READY',
   FAULT: 'FAULT',
   OFF: 'OFF',
+  MOVING:'MOVING',
+  STANDBY:'STANDBY',
+  DISABLED:'DISABLED',
+  ALARM:'ALARM',
+  INVALID:'INVALID',
+  OFFLINEOFF:'OFFLINE',
+  LOWLIMIT:'LOWLIMIT',
+  HIGHLIMI:'HIGHLIMIT',
+  NOTINITIALIZED:'NOTINITIALIZED',
+  MOVESTARTED:'MOVESTARTED'
 };
 
 export const MOTOR_STATE_DESC = {};

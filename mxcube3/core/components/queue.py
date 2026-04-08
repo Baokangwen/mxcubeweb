@@ -225,6 +225,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in get_node_state()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in get_node_state()"
+        # )#添加
         try:
             node, entry = self.get_entry(node_id)
         except Exception:
@@ -244,6 +247,10 @@ class Queue(ComponentBase):
             state = RUNNING
         else:
             state = UNCOLLECTED
+
+        # logging.getLogger("HWR").debug(
+        #     "get out get_node_state()"
+        # )#添加
 
         # logging.getLogger("HWR").debug(
         #     "get out get_node_state()"
@@ -290,6 +297,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in _handle_task_node()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_task_node()"
+        # )#添加
         parameters = {
             **node.task_data.collection_parameters.dict(),
             **node.task_data.user_collection_parameters.dict(),
@@ -329,6 +339,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in _handle_dc()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_dc()"
+        # )#添加
         parameters = node.as_dict()
         parameters["shape"] = getattr(node, "shape", "")
         parameters["helical"] = node.experiment_type == qme.EXPERIMENT_TYPE.HELICAL
@@ -340,6 +353,8 @@ class Queue(ComponentBase):
         parameters.pop("centred_position")
 
         queueID = node._node_id
+        # print("                                 trace in _handle_dc,queueID: ",queueID)
+
         # print("                                 trace in _handle_dc,queueID: ",queueID)
 
         enabled, state = self.get_node_state(queueID)
@@ -388,6 +403,9 @@ class Queue(ComponentBase):
         return res
 
     def _handle_gphl_wf(self, sample_node, node, include_lims_data=False):
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_gphl_wf()"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in _handle_gphl_wf()"
         # )#添加
@@ -449,6 +467,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in _handle_wf()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_wf()"
+        # )#添加
         queueID = node._node_id
         enabled, state = self.get_node_state(queueID)
         parameters = node.parameters
@@ -500,6 +521,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in _handle_xrf()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_xrf()"
+        # )#添加
         queueID = node._node_id
         enabled, state = self.get_node_state(queueID)
         parameters = {"countTime": node.exp_time, "shape": node.shape}
@@ -519,7 +543,7 @@ class Queue(ComponentBase):
         parameters["fullPath"] = os.path.join(
             parameters["path"], parameters["fileName"]
         )
-        model, entry = self.get_entry(queueID)
+        # model, entry = self.get_entry(queueID)
 
         res = {
             "label": "XRF Scan",
@@ -536,6 +560,9 @@ class Queue(ComponentBase):
         return res
 
     def _handle_energy_scan(self, sample_node, node):
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_energy_scan()"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in _handle_energy_scan()"
         # )#添加
@@ -580,9 +607,19 @@ class Queue(ComponentBase):
         #     "get in _handle_char()"
         # )#添加
 
+
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_char()"
+        # )#添加
+
         sample_node = parent_node.get_sample_node()
         parameters = node.characterisation_parameters.as_dict()
         parameters["shape"] = node.get_point_index()
+
+        # print("                             trace in isinstance(node, qmo.Characterisation), sample_node: ",sample_node)
+        # print("                             trace in isinstance(node, qmo.Characterisation), parameters: ",parameters)
+        # print("                             trace in isinstance(node, qmo.Characterisation), node.reference_image_collection: ", node.reference_image_collection)
+
 
         # print("                             trace in isinstance(node, qmo.Characterisation), sample_node: ",sample_node)
         # print("                             trace in isinstance(node, qmo.Characterisation), parameters: ",parameters)
@@ -592,10 +629,12 @@ class Queue(ComponentBase):
             "parameters"
         ]
         # print("                             trace in isinstance(node, qmo.Characterisation), refp: ",refp)
+        # print("                             trace in isinstance(node, qmo.Characterisation), refp: ",refp)
 
         parameters.update(refp)
 
         queueID = node._node_id
+        # print("                              trace in isinstance(node, qmo.Characterisation), queueID: ",queueID)
         # print("                              trace in isinstance(node, qmo.Characterisation), queueID: ",queueID)
         enabled, state = self.get_node_state(queueID)
 
@@ -629,9 +668,16 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get out _handle_char()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get out _handle_char()"
+        # )#添加
         return res
 
     def _handle_diffraction_plan(self, node, sample_node):
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_diffraction_plan"
+        # )#添加
+
         # logging.getLogger("HWR").debug(
         #     "get in _handle_diffraction_plan"
         # )#添加
@@ -644,9 +690,18 @@ class Queue(ComponentBase):
             # logging.getLogger("HWR").debug(
             #     "get out _handle_diffraction_plan"
             # )  # 添加
+            # logging.getLogger("HWR").debug(
+            #     "get out _handle_diffraction_plan"
+            # )  # 添加
             return (-1, {})
         else:
             collections = model.diffraction_plan[0]  # a list of lists
+
+            # logging.getLogger("HWR").debug(
+            #     "collections value in  _handle_diffraction_plan: "
+            # )  # 添加
+            print(collections)
+
 
             # logging.getLogger("HWR").debug(
             #     "collections value in  _handle_diffraction_plan: "
@@ -666,13 +721,22 @@ class Queue(ComponentBase):
             # logging.getLogger("HWR").debug(
             #     "get out _handle_diffraction_plan"
             # )  # 添加
+            # logging.getLogger("HWR").debug(
+            #     "get out _handle_diffraction_plan"
+            # )  # 添加
             return (originID, tasks)
+        # logging.getLogger("HWR").debug(
+        #     "get out _handle_diffraction_plan"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get out _handle_diffraction_plan"
         # )#添加
         return (-1, {})
 
     def _handle_interleaved(self, sample_node, node):
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_interleaved"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in _handle_interleaved"
         # )#添加
@@ -698,10 +762,16 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get out _handle_interleaved"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get out _handle_interleaved"
+        # )#添加
 
         return res
 
     def _handle_sample(self, node, include_lims_data=False):
+        # logging.getLogger("HWR").debug(
+        #     "get in _handle_sample"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in _handle_sample"
         # )#添加
@@ -740,6 +810,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get out _handle_sample"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get out _handle_sample"
+        # )#添加
 
         return {node.loc_str: sample}
 
@@ -765,6 +838,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in queue_to_dict_rec"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in queue_to_dict_rec"
+        # )#添加
         result = []
 
         if isinstance(node, list):
@@ -773,6 +849,7 @@ class Queue(ComponentBase):
             node_list = node.get_children()
 
         for node in node_list:
+            # print("         node in queue_to_dict_rec: ",node)
             # print("         node in queue_to_dict_rec: ",node)
             # NB under GPhL workflow, nodes do not have predictable distance
             # to their sample node
@@ -788,10 +865,12 @@ class Queue(ComponentBase):
 
             elif isinstance(node, qmo.Characterisation):
                 # print("                     trace in isinstance(node, qmo.Characterisation)")
+                # print("                     trace in isinstance(node, qmo.Characterisation)")
                 result.append(self._handle_char(sample_node, node, include_lims_data))
             elif (
                 node.__class__ is qmo.DataCollection
             ):  # isinstance(node, qmo.DataCollection):
+                # print("                     trace in isinstance(node, qmo.DataCollection)")
                 # print("                     trace in isinstance(node, qmo.DataCollection)")
                 result.append(self._handle_dc(sample_node, node, include_lims_data))
             elif isinstance(node, qmo.Workflow):
@@ -815,6 +894,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get out queue_to_dict_rec"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get out queue_to_dict_rec"
+        # )#添加
         return result
 
     def queue_exec_state(self):
@@ -826,12 +908,18 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in queue_exec_state"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in queue_exec_state"
+        # )#添加
         state = QUEUE_STOPPED
 
         if HWR.beamline.queue_manager.is_paused():
             state = QUEUE_PAUSED
         elif HWR.beamline.queue_manager.is_executing():
             state = QUEUE_RUNNING
+        # logging.getLogger("HWR").debug(
+        #     "get out queue_exec_state"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get out queue_exec_state"
         # )#添加
@@ -862,6 +950,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in set_enabled_entry"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in set_enabled_entry"
+        # )#添加
         model, entry = self.get_entry(qid)
         model.set_enabled(enabled)
         entry.set_enabled(enabled)
@@ -873,6 +964,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in delete_entry"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in delete_entry"
+        # )#添加
         parent_entry = entry.get_container()
         parent_entry.dequeue(entry)
         model = entry.get_data_model()
@@ -880,6 +974,9 @@ class Queue(ComponentBase):
         logging.getLogger("MX3.HWR").info("[QUEUE] is:\n%s " % self.queue_to_json())
 
     def delete_entry_at(self, item_pos_list):
+        # logging.getLogger("HWR").debug(
+        #     "get in delete_entry_at"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in delete_entry_at"
         # )#添加
@@ -902,6 +999,9 @@ class Queue(ComponentBase):
             self.delete_entry(entry)
 
     def enable_entry(self, id_or_qentry, flag):
+        # logging.getLogger("HWR").debug(
+        #     "get in enable_entry"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in enable_entry"
         # )#添加
@@ -1160,6 +1260,11 @@ class Queue(ComponentBase):
         # )
 
 
+        # logging.getLogger("HWR").debug(
+        #     "get in _queue_add_item_rec()"
+        # )
+
+
         children = []
 
         for item in item_list:
@@ -1205,6 +1310,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get out _queue_add_item_rec()"
         # )
+        # logging.getLogger("HWR").debug(
+        #     "get out _queue_add_item_rec()"
+        # )
 
     def add_sample(self, sample_id, item):
         """
@@ -1213,6 +1321,9 @@ class Queue(ComponentBase):
         :param str sample_id: Sample id (often sample changer location)
         :returns: SampleQueueEntry
         """
+        # logging.getLogger("HWR").debug(
+        #     "get in add_sample"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in add_sample"
         # )#添加
@@ -1368,6 +1479,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in set_gphl_wf_params()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in set_gphl_wf_params()"
+        # )#添加
         params = task_data["parameters"]
         self.app.lims.apply_template(params, sample_model, model.path_template)
 
@@ -1392,6 +1506,9 @@ class Queue(ComponentBase):
         :param GenericWorkflowQueueEntry: The queue entry of the model
         :param dict task_data: Dictionary with new parameters
         """
+        # logging.getLogger("HWR").debug(
+        #     "get in set_wf_params()"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in set_wf_params()"
         # )#添加
@@ -1458,6 +1575,9 @@ class Queue(ComponentBase):
         :param CharacterisationQueueEntry: The queue entry of the model
         :param dict task_data: Dictionary with new parameters
         """
+        # logging.getLogger("HWR").debug(
+        #     "get in set_char_params()"
+        # )#添加
         # logging.getLogger("HWR").debug(
         #     "get in set_char_params()"
         # )#添加
@@ -1592,6 +1712,9 @@ class Queue(ComponentBase):
         # logging.getLogger("HWR").debug(
         #     "get in _create_dc()"
         # )#添加
+        # logging.getLogger("HWR").debug(
+        #     "get in _create_dc()"
+        # )#添加
         dc_model = qmo.DataCollection()
         dc_model.set_origin(ORIGIN_MX3)
         dc_model.center_before_collect = True
@@ -1607,6 +1730,9 @@ class Queue(ComponentBase):
         Return:
             (tuple): (model, entry)
         """
+        logging.getLogger("HWR").debug(
+            "get in _create_queue_entry()"
+        )#添加
         logging.getLogger("HWR").debug(
             "get in _create_queue_entry()"
         )#添加
@@ -1703,6 +1829,9 @@ class Queue(ComponentBase):
         logging.getLogger("HWR").debug(
             "get in add_characterisation()"
         )
+        logging.getLogger("HWR").debug(
+            "get in add_characterisation()"
+        )
         sample_model, sample_entry = self.get_entry(node_id)
         params = task["parameters"]
 
@@ -1744,6 +1873,10 @@ class Queue(ComponentBase):
             "get out add_characterisation()"
         )
 
+        logging.getLogger("HWR").debug(
+            "get out add_characterisation()"
+        )
+
         return char_model._node_id
 
     def add_data_collection(self, node_id, task):
@@ -1756,6 +1889,9 @@ class Queue(ComponentBase):
         :returns: The queue id of the data collection
         :rtype: int
         """
+        logging.getLogger("HWR").debug(
+            "get in add_data_collection()"
+        )#添加
         logging.getLogger("HWR").debug(
             "get in add_data_collection()"
         )#添加
@@ -1791,6 +1927,9 @@ class Queue(ComponentBase):
             task (dict): task data
             task_name (str): The task name
         """
+        logging.getLogger("HWR").debug(
+            "get in add_queue_entry()"
+        )#添加
         logging.getLogger("HWR").debug(
             "get in add_queue_entry()"
         )#添加
@@ -2020,6 +2159,9 @@ class Queue(ComponentBase):
         logging.getLogger("HWR").debug(
             "get in load_queue()"
         )#添加
+        logging.getLogger("HWR").debug(
+            "get in load_queue()"
+        )#添加
         proposal_id = getattr(current_user, "proposal", None)
 
         if proposal_id is not None:
@@ -2095,6 +2237,9 @@ class Queue(ComponentBase):
         logging.getLogger("HWR").debug(
             "get in queue_model_diff_plan_available()"
         )#添加
+        logging.getLogger("HWR").debug(
+            "get in queue_model_diff_plan_available()"
+        )#添加
         cols = []
         for collection in collection_list:
             if isinstance(collection, qmo.DataCollection):
@@ -2147,6 +2292,9 @@ class Queue(ComponentBase):
         :param str sid: sampleID
         :param int tindex: task index of task within sample with id sampleID
         """
+        logging.getLogger("HWR").debug(
+            "get in execute_entry_with_id()"
+        )#添加
         logging.getLogger("HWR").debug(
             "get in execute_entry_with_id()"
         )#添加
@@ -2472,6 +2620,9 @@ class Queue(ComponentBase):
         logging.getLogger("HWR").debug(
             "get in set_queue()"
         )
+        logging.getLogger("HWR").debug(
+            "get in set_queue()"
+        )
         self.queue_add_item(json_queue)
         self.save_queue(session)
 
@@ -2613,7 +2764,7 @@ class Queue(ComponentBase):
 
         if task_name == "characterisation":
             acq_parameters.update(
-                HWR.beamline.characterisation.get_default_characterisation_parameters().as_dict()
+                HWR.beamline.characterisation.get_default_characterisation_parameters_json().as_dict()
             )
 
         schema = self.get_task_schema(data_model) if data_model else {}

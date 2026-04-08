@@ -24,13 +24,13 @@ def init_route(app, server, url_prefix):
     @server.route("/help")
     @server.restrict
     def serve_static_file():
-        logging.getLogger("HWR").info("[Main] Serving main page")
+        # logging.getLogger("HWR").info("[Main] Serving main page")
         return server.flask.send_static_file("index.html")
 
     @server.route("/")
     @server.route("/login")
     def unrestricted_serve_static_file():
-        logging.getLogger("HWR").info("[Main] Serving main page")
+        # logging.getLogger("HWR").info("[Main] Serving main page")
         return server.flask.send_static_file("index.html")
 
     @bp.route("/uiproperties")

@@ -34,7 +34,9 @@ from mxcubecore import HardwareRepository as HWR
 #     return res
 
 def last_queue_node():
+    print('last_queue_node, current_queue_entries lenth is: ', len(HWR.beamline.queue_manager._current_queue_entries))
     node = HWR.beamline.queue_manager._current_queue_entries[-1].get_data_model()
+    print('last_queue_node, node id is: ', node._node_id)
 
     # Reference collections are orphans, the node we want is the
     # characterisation not the reference collection itself
@@ -107,9 +109,9 @@ def handle_auto_mount_next(entry):
 
 def diffractometer_phase_changed(*args):
     data = {"msg": "Diffractometer phase changed", "phase": args}
-    # logging.getLogger("HWR").info(
-    #     "==== Diffractometer phase changed to %s" % args
-    # )
+    logging.getLogger("user_level_log").info(
+        "Diffractometer phase changed to %s" % args
+    )
     server.emit("diff_phase_changed", data, namespace="/hwr")
 
 
@@ -481,9 +483,12 @@ def collect_oscillation_finished(owner, status, state, lims_id, osc_id, params):
     )  # 添加
     node = last_queue_node()
     mxcube.NODE_ID_TO_LIMS_ID[node["queue_id"]] = lims_id
-
+    logging.getLogger("HWR").info(f"collect_oscillation_finished - node['queue_id']: {node['queue_id']}")
     if not mxcube.queue.is_interleaved(node["node"]):
-        mxcube.queue.enable_entry(node["queue_id"], False)
+        if(node["queue_id"] == None):
+            print("node queue_id is None")
+        else:
+            mxcube.queue.enable_entry(node["queue_id"], False)
 
         msg = {
             "Signal": "collectOscillationFinished",

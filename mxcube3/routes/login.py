@@ -34,6 +34,7 @@ def init_route(app, server, url_prefix):
         200: On success
         409: Error, could not log in
         """
+        app.usermanager.update_active_users()
         params = request.get_json()
         login_id = params.get("proposal", "")
         password = params.get("password", "")
@@ -55,8 +56,8 @@ def init_route(app, server, url_prefix):
         """
         Signout from Mxcube3 and reset the session
         """
+        app.usermanager.user_logout()
         app.usermanager.signout()
-
         return redirect("/login", code=302)
 
     @bp.route("/login_info", methods=["GET"])

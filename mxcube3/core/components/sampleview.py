@@ -337,12 +337,12 @@ class SampleView(ComponentBase):
                             # coords for the center of the grid
                             x_c = (
                                 x
-                                + (shape_data["num_cols"] /2.0)
+                                + (shape_data["num_cols"] / 2.0)
                                 * shape_data["cell_width"]
                             )
                             y_c = (
                                 y
-                                + (shape_data["num_rows"] /2.0)
+                                + (shape_data["num_rows"] / 2.0)
                                 * shape_data["cell_height"]
                             )
                             logging.getLogger("HWR.MX3").info(
