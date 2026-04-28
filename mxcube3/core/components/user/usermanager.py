@@ -29,7 +29,6 @@ class BaseUserManager(ComponentBase):
 
     def get_operator(self):
         user = None
-
         for _u in User.query.all():
             if _u.in_control:
                 user = _u
@@ -45,7 +44,6 @@ class BaseUserManager(ComponentBase):
 
     def get_user(self, username):
         user = None
-
         for _u in User.query.all():
             if _u.username == username:
                 user = _u
@@ -74,6 +72,20 @@ class BaseUserManager(ComponentBase):
         }
 
         self.app.server.emit("observersChanged", data, namespace="/hwr")
+        
+        
+    def deactive_users(self, loginid):
+        for _u in User.query.all():
+            if (
+                _u.username == loginid
+                and _u.last_request_timestamp
+                and (
+                    datetime.datetime.now() - _u.last_request_timestamp
+                ).total_seconds()
+                > 60
+            ):
+                self.app.server.user_datastore.deactivate_user(_u)
+                
 
     def update_active_users(self):
         for _u in User.query.all():
@@ -294,8 +306,8 @@ class BaseUserManager(ComponentBase):
         sid = flask.session["sid"]
         user_datastore = self.app.server.user_datastore
         username = f"{user}-{str(uuid.uuid4())}"
-        if HWR.beamline.lims.loginType.lower() == "user":
-            username = f"{user}"
+        # if HWR.beamline.lims.loginType.lower() == "user":
+        #     username = f"{user}"
 
         # Make sure that the roles staff and incontrol always
         # exists
@@ -323,6 +335,8 @@ class BaseUserManager(ComponentBase):
             )
         else:
             _u.limsdata = json.dumps(lims_data)
+            # _u.session_id = sid
+            # _u.last_request_timestamp = datetime.datetime.now()
             user_datastore.append_roles(_u, self._get_configured_roles(user))
 
         self.app.server.user_datastore.commit()
