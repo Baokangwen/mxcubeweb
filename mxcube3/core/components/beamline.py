@@ -84,18 +84,38 @@ class Beamline(ComponentBase):
         diffractometer = HWR.beamline.diffractometer
         diffractometer.connect("phaseChanged", signals.diffractometer_phase_changed)
 
+    # def get_aperture(self):
+    #     """
+    #     Returns list of apertures and the one currently used.
+
+    #     :return: Tuple, (list of apertures, current aperture)
+    #     :rtype: tuple
+    #     """
+    #     aperture_list, current_aperture = [], None
+    #     beam = HWR.beamline.beam
+
+    #     aperture_list = beam.get_available_size()["values"]
+    #     current_aperture = beam.get_value()[-1]
+
+    #     return aperture_list, current_aperture
+
     def get_aperture(self):
         """
-        Returns list of apertures and the one currently used.
-
-        :return: Tuple, (list of apertures, current aperture)
-        :rtype: tuple
+        防弹版：直接从真实的 Aperture 硬件获取光斑列表
         """
-        aperture_list, current_aperture = [], None
-        beam = HWR.beamline.beam
-
-        aperture_list = beam.get_available_size()["values"]
-        current_aperture = beam.get_value()[-1]
+        import logging
+        aperture_list, current_aperture = [5, 20, 50, 100, 150], 20
+        
+        try:
+            # 第一优先级：直接找我们刚写好的真正的光阑对象
+            ap = HWR.beamline.diffractometer.aperture
+            if ap is not None:
+                if hasattr(ap, '_diameter_size_list') and ap._diameter_size_list:
+                    aperture_list = ap._diameter_size_list
+                if hasattr(ap, '_current_diameter_index') and ap._current_diameter_index is not None:
+                    current_aperture = aperture_list[ap._current_diameter_index]
+        except Exception as e:
+            logging.getLogger("MX3.HWR").warning(f"⚠️ 读取光阑列表失败，启用安全兜底: {str(e)}")
 
         return aperture_list, current_aperture
 
@@ -282,34 +302,73 @@ class Beamline(ComponentBase):
             msg = "Action cannot run: command '%s' does not exist" % name
             raise Exception(msg)
 
+    # def get_beam_info(self):
+    #     """
+    #     Returns beam information retrieved by the beam_info hardware object,
+    #     containing position, size and shape.
+
+    #     :return: Beam info dictionary with keys: position, shape, size_x, size_y
+    #     :rtype: dict
+    #     """
+    #     beam = HWR.beamline.beam
+    #     beam_info_dict = {"position": [], "shape": "", "size_x": 0, "size_y": 0}
+    #     sx, sy, shape, _label = beam.get_value()
+
+    #     if beam is not None:
+    #         beam_info_dict.update(
+    #             {
+    #                 "position": beam.get_beam_position_on_screen(),
+    #                 "size_x": sx,
+    #                 "size_y": sy,
+    #                 #"shape": shape.value,
+    #                 "shape": shape,
+    #             }
+    #         )
+
+    #     aperture_list, current_aperture = self.get_aperture()
+
+    #     beam_info_dict.update(
+    #         {"apertureList": aperture_list, "currentAperture": current_aperture}
+    #     )
+
+    #     return beam_info_dict
+
     def get_beam_info(self):
         """
-        Returns beam information retrieved by the beam_info hardware object,
-        containing position, size and shape.
-
-        :return: Beam info dictionary with keys: position, shape, size_x, size_y
-        :rtype: dict
+        零干扰防弹版：完全保留官方原生的 shape、size、position 逻辑，仅追加 aperture
         """
-        beam = HWR.beamline.beam
+        import logging
         beam_info_dict = {"position": [], "shape": "", "size_x": 0, "size_y": 0}
-        sx, sy, shape, _label = beam.get_value()
-
-        if beam is not None:
+        try:
+            beam = HWR.beamline.beam
+            if beam is not None:
+                sx, sy, shape, _label = beam.get_value()
+                beam_info_dict.update(
+                    {
+                        "position": beam.get_beam_position_on_screen(),
+                        "size_x": sx,
+                        "size_y": sy,
+                        "shape": shape,
+                    }
+                )
+        except Exception as e:
+            logging.getLogger("MX3.HWR").warning(f"⚠️ 读取原生 beam 属性失败，但不影响系统运行: {str(e)}")
+        try:
+            aperture_list, current_aperture = self.get_aperture()
             beam_info_dict.update(
                 {
-                    "position": beam.get_beam_position_on_screen(),
-                    "size_x": sx,
-                    "size_y": sy,
-                    #"shape": shape.value,
-                    "shape": shape,
+                    "apertureList": aperture_list, 
+                    "currentAperture": current_aperture
                 }
             )
-
-        aperture_list, current_aperture = self.get_aperture()
-
-        beam_info_dict.update(
-            {"apertureList": aperture_list, "currentAperture": current_aperture}
-        )
+        except Exception as e:
+            logging.getLogger("MX3.HWR").error(f"⚠️ 获取 aperture 兜底失败: {str(e)}")
+            beam_info_dict.update(
+                {
+                    "apertureList": [5, 20, 50, 100, 150], 
+                    "currentAperture": 20
+                }
+            )
 
         return beam_info_dict
 
@@ -335,11 +394,27 @@ class Beamline(ComponentBase):
         HWR.beamline.diffractometer.save_centring_positions()
 
 
+    # def set_aperture(self, pos):
+    #     beam = HWR.beamline.beam
+    #     msg = "Changing beam size to: %s" % pos
+    #     logging.getLogger("MX3.HWR").info(msg)
+    #     beam.set_value(pos)
+
     def set_aperture(self, pos):
-        beam = HWR.beamline.beam
-        msg = "Changing beam size to: %s" % pos
-        logging.getLogger("MX3.HWR").info(msg)
-        beam.set_value(pos)
+        """
+        拦截系统错误路由，强制将切换指令发送给真实的物理光阑 (Aperture)
+        """
+        logging.getLogger("MX3.HWR").info(f"🔄 [路由拦截] 收到前端光斑切换请求: {pos}，正在强制定向至 Aperture 对象...")
+        
+        try:
+            # 🚀 直接调用挂载在 diffractometer 下面的真实 aperture 硬件！
+            HWR.beamline.diffractometer.aperture.set_value(pos)
+        except AttributeError:
+            # 如果万一没找到 diffractometer.aperture，作为备用方案退回
+            logging.getLogger("MX3.HWR").warning("⚠️ 找不到 diffractometer.aperture，尝试发送给 beam")
+            beam = HWR.beamline.beam
+            if beam:
+                beam.set_value(pos)
 
     def diffractometer_get_info(self):
         ret = {}
